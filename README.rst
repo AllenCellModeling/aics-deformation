@@ -6,8 +6,8 @@ aics-deformation
 .. image:: https://img.shields.io/pypi/v/aicsdeformation.svg
         :target: https://pypi.python.org/pypi/aicsdeformation
 
-.. image:: https://img.shields.io/travis/AllenCellModeling/aicsdeformation.svg
-        :target: https://travis-ci.org/AllenCellModeling/aicsdeformation
+.. image:: https://img.shields.io/travis/AllenCellModeling/aics-deformation.svg
+        :target: https://travis-ci.org/AllenCellModeling/aics-deformation
 
 .. image:: https://readthedocs.org/projects/aicsdeformation/badge/?version=latest
         :target: https://aicsdeformation.readthedocs.io/en/latest/?badge=latest
