@@ -11,4 +11,4 @@ def get_module_version():
     return __version__
 
 
-from .deformation import Deformation  # noqa: F401
+from .aicsdeformation import AICSDeformation  # noqa: F401
