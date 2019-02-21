@@ -6,25 +6,25 @@ import logging
 import numpy as np
 from typing import List, Tuple
 
+from .processing import calculate_displacements
+
 ###############################################################################
 
 log = logging.getLogger(__name__)
 
 ###############################################################################
 
-# openpiv reference:
-# https://openpiv.readthedocs.io/en/latest/src/tutorial.html
-
 
 class AICSDeformation(object):
     """
     AICSDeformation objects can be used to process and visualize standard deformation tasks.
 
-    :param frames: A list of imaging frames to compare.
+    :param frames: An ordered list of imaging frames to compare.
     """
 
     @staticmethod
     def _check_frames(frames: List[np.ndarray], dims: Tuple[int, int]):
+        log.debug(f"Validating {len(frames)} frames using dims: {dims}.")
         for frame in frames:
             # Check frame is a numpy.ndarray
             if not isinstance(frame, np.ndarray):
@@ -38,12 +38,29 @@ class AICSDeformation(object):
             if frame.shape != dims:
                 raise ValueError("All frame data must have the same dimensions.")
 
-    def __init__(self, frames: List[np.ndarray]):
+    def __init__(self, frames: List[np.ndarray], n_threads: int = None):
         # Check frames
         self._check_frames(frames, frames[0].shape)
 
         # Store frames
-        self._frames = copy.deepcopy(frames)
+        self._frames = [copy.deepcopy(frame.astype(np.uint16)) for frame in frames]
+
+        # Store processing parameters
+        self.n_threads = n_threads
+
+        # Lazy load
+        self._displacements = None
+
+        # Parameter tuning
+        # self.framesToSearch = 20
+        # self.window_size = window
+        # self.overlap_size = overlap
+        # self.dt = 0.003
+        # self.search_area = search_area
+        # self.s2n_method = 'peak2peak'
+        # self.outlier_method = 'localmean'
+        # self.s2n_thresh = 1.3
+        # self.n_of_threads = 16
 
     @property
     def frames(self):
@@ -69,7 +86,8 @@ class AICSDeformation(object):
 
         # Insert all
         for i, frame in enumerate(frames):
-            self._frames.insert(index + i, copy.deepcopy(frame))
+            self._frames.insert(index + i, copy.deepcopy(frame.astype(np.uint16)))
+            log.info(f"Inserted {frame.shape} frame at {i}.")
 
     def insert_frame(self, index: int, frame: np.ndarray):
         """
@@ -91,7 +109,8 @@ class AICSDeformation(object):
         self._check_frames(frames, self.dims)
 
         # Append frames
-        self._frames = [*self.frames, *[copy.deepcopy(frame) for frame in frames]]
+        self._frames = [*self.frames, *[copy.deepcopy(frame.astype(np.uint16)) for frame in frames]]
+        log.info(f"Appended {len(frames)} to frames.")
 
     def append_frame(self, frame: np.ndarray):
         """
@@ -109,6 +128,7 @@ class AICSDeformation(object):
         :param index: Which frame index to remove.
         :return: The previously stored frame data at the provided index.
         """
+        log.info(f"Removing frame at {index}.")
         return self._frames.pop(index)
 
     def update_frame(self, index: int, frame: np.ndarray):
@@ -125,6 +145,15 @@ class AICSDeformation(object):
         # Insert and remove old
         self.insert_frame(index, frame)
         return self.remove_frame(index + 1)
+
+    @property
+    def displacements(self):
+        if self._displacements is None:
+            # TODO:
+            # Remove the slice on self.
+            self._displacements = calculate_displacements(self[:2])
+
+        return self._displacements
 
     def __len__(self):
         return len(self.frames)
