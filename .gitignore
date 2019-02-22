@@ -104,3 +104,4 @@ ENV/
 # Specific project extras
 data/
 workbench.ipynb
+.DS_Store

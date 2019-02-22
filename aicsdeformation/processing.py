@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from functools import partial
+import itertools
 import logging
 from multiprocessing.dummy import Pool
 import numpy as np
-# import openpiv.process
-# import openpiv.scaling
-# import openpiv.validation
-# import openpiv.filters
-from typing import List, Tuple
+import openpiv.process
+import openpiv.scaling
+import openpiv.validation
+import openpiv.filters
+from typing import Dict, List, Tuple, Union
 
 from .types import Displacement
 
@@ -23,47 +25,74 @@ log = logging.getLogger(__name__)
 
 
 def calculate_displacement(
-    frameA: np.ndarray = None,
-    frameB: np.ndarray = None,
     frames: Tuple[np.ndarray] = None,
-    window_size: int = 20,
-
+    frame_a: np.ndarray = None,
+    frame_b: np.ndarray = None,
+    window_size: int = 18,
+    overlap: int = 4,
+    dt: float = 0.003,
+    search_area_size: int = 20,
+    sig2noise_method: str = "peak2peak"
 ) -> Displacement:
-    # Expand tuple if neccessary
-    # if frames:
-    #     frameA, frameB = (*frames,)
+    # Expand frames if required
+    if frames:
+        frame_a, frame_b = (*frames,)
 
     # Begin calculation
-    x = None
-    y = None
-    u = None
-    v = None
-    mask = None
-    sig2noise = None
-    # u, v, sig2noise = openpiv.process.extended_search_area_piv(
-    #     frameA,
-    #     frameB,
-    #     window_size=window_size,
-    #     overlap=self.overlap_size,
-    #     dt=self.dt,
-    #     search_area_size=self.search_area,
-    #     sig2noise_method=self.s2n_method
-    # )
-    # x, y = openpiv.process.get_coordinates(image_size=frame_a.shape, window_size=self.window_size,
-    #                                        overlap=self.overlap_size)
-    # u, v, mask = openpiv.validation.sig2noise_val(u, v, sig2noise, threshold=self.s2n_thresh)
-    # u, v = openpiv.filters.replace_outliers(u, v, method=self.outlier_method, max_iter=10, kernel_size=2)
-    # x, y, u, v = openpiv.scaling.uniform(x, y, u, v, scaling_factor=96.52)
-    return Displacement(x, y, u, v, mask, sig2noise)
+    log.debug("{} Displacement using parameters: [window_size: {}, overlap: {}, dt: {}, search_area_size: {}]".format(
+        sig2noise_method, window_size, overlap, dt, search_area_size
+    ))
+    u, v, sig2noise = openpiv.process.extended_search_area_piv(
+        frame_a,
+        frame_b,
+        window_size=window_size,
+        overlap=overlap,
+        dt=dt,
+        search_area_size=search_area_size,
+        sig2noise_method=sig2noise_method
+    )
+    return Displacement(u, v, sig2noise)
 
 
-def calculate_displacements(frames: List[np.ndarray], n_threads: int = None) -> List[Displacement]:
+def generate_parameter_searched_displacements(
+    frames: Tuple[np.ndarray] = None,
+    frame_a: np.ndarray = None,
+    frame_b: np.ndarray = None,
+    window_size: int = 20,
+    window_size_steps: int = 9,
+    window_size_step_size: int = 2,
+    overlap: int = 4,
+    overlap_steps: int = 3,
+    overlap_step_size: int = 1,
+    dt: float = 0.003,
+    dt_steps: int = 5,
+    dt_step_size: float = 0.0005,
+    search_area_size: int = 18,
+    search_area_size_steps: int = 8,
+    search_area_size_step_size: int = 2,
+    sig2noise_method: str = "peak2peak"
+) -> Tuple[Displacement, Dict[Displacement, Dict[str, Union[int, float]]]]:
+
+    # Create all step lists
+    window_sizes = set([
+        *[window_size - i * window_size_step_size for i in range(window_size_steps)],
+        *[window_size + i * window_size_step_size for i in range(window_size_steps)]
+    ])
+
+    # Start multithreading
+    return window_sizes
+
+
+def calculate_displacements(frames: List[np.ndarray], n_threads: int = None, **kwargs) -> List[Displacement]:
     # Fence-post: We only want to create displacements for n-frames - 1
-    frame_pairs = [(frames[i], frames[i+1]) for i in range(len(frames) - 1)]
+    # Additionally enforce frames are numpy types
+    frame_pairs = [(frames[i].astype(np.int32), frames[i+1].astype(np.int32)) for i in range(len(frames) - 1)]
+
+    passdown = partial(calculate_displacement, **kwargs)
 
     # Start multithreading
     with Pool(n_threads) as pool:
         # Map results
-        displacements = pool.map(calculate_displacement, frame_pairs)
+        displacements = pool.map(passdown, frame_pairs)
 
     return displacements
