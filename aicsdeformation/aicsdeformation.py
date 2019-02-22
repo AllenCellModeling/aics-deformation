@@ -4,7 +4,7 @@
 import copy
 import logging
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from .processing import calculate_displacements
 
@@ -19,7 +19,9 @@ class AICSDeformation(object):
     """
     AICSDeformation objects can be used to process and visualize standard deformation tasks.
 
-    :param frames: An ordered list of imaging frames to compare.
+    :param frames: An ordered list of imaging frames, or a 3D ndarray, to compare.
+    :param t_index: If frames was provided as a 3D ndarray, which dimension index represents time.
+    :param n_threads: Number of threads to use for multiprocessed operations. By default this is os.cpu_count().
     """
 
     @staticmethod
@@ -38,7 +40,20 @@ class AICSDeformation(object):
             if frame.shape != dims:
                 raise ValueError("All frame data must have the same dimensions.")
 
-    def __init__(self, frames: List[np.ndarray], n_threads: int = None):
+    def __init__(self, frames: Union[np.ndarray, List[np.ndarray]], t_index: int = None, n_threads: int = None):
+        # Convert 3D ndarray
+        if isinstance(frames, np.ndarray):
+            # Check dim size
+            if len(frames.shape) != 3:
+                raise ValueError(f"Unsure how to handle non 3D frames ndarray. Provided: {len(frames.shape)}D")
+
+            # Check t_index
+            if t_index is None:
+                raise TypeError("No t_index was provided to split 3D ndarray into frames.")
+
+            # Split
+            frames = [frames[t, :, :] for t in range(frames.shape[t_index])]
+
         # Check frames
         self._check_frames(frames, frames[0].shape)
 
