@@ -16,11 +16,12 @@ aics-deformation
 
 Tools used for interacting with AICS deformation projects.
 
+Numpy and Cython are required to be installed before attempting to install this package.
+
 
 * Free software: Allen Institute Software License
 
 * Documentation: https://aicsdeformation.readthedocs.io.
-
 
 Features
 --------

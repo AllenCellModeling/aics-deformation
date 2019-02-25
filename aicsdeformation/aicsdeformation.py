@@ -6,7 +6,7 @@ import logging
 import numpy as np
 from typing import List, Tuple, Union
 
-from .processing import calculate_displacements
+from .processing import calculate_displacements, process_displacements
 
 ###############################################################################
 
@@ -21,7 +21,6 @@ class AICSDeformation(object):
 
     :param frames: An ordered list of imaging frames, or a 3D ndarray, to compare.
     :param t_index: If frames was provided as a 3D ndarray, which dimension index represents time.
-    :param n_threads: Number of threads to use for multiprocessed operations. By default this is os.cpu_count().
     """
 
     @staticmethod
@@ -40,7 +39,7 @@ class AICSDeformation(object):
             if frame.shape != dims:
                 raise ValueError("All frame data must have the same dimensions.")
 
-    def __init__(self, frames: Union[np.ndarray, List[np.ndarray]], t_index: int = None, n_threads: int = None):
+    def __init__(self, frames: Union[np.ndarray, List[np.ndarray]], t_index: int = None):
         # Convert 3D ndarray
         if isinstance(frames, np.ndarray):
             # Check dim size
@@ -60,22 +59,8 @@ class AICSDeformation(object):
         # Store frames
         self._frames = [copy.deepcopy(frame.astype(np.uint16)) for frame in frames]
 
-        # Store processing parameters
-        self.n_threads = n_threads
-
         # Lazy load
         self._displacements = None
-
-        # Parameter tuning
-        # self.framesToSearch = 20
-        # self.window_size = window
-        # self.overlap_size = overlap
-        # self.dt = 0.003
-        # self.search_area = search_area
-        # self.s2n_method = 'peak2peak'
-        # self.outlier_method = 'localmean'
-        # self.s2n_thresh = 1.3
-        # self.n_of_threads = 16
 
     @property
     def frames(self):
@@ -164,9 +149,63 @@ class AICSDeformation(object):
     @property
     def displacements(self):
         if self._displacements is None:
-            # TODO:
-            # Remove the slice on self.
-            self._displacements = calculate_displacements(self[:2])
+            self._displacements = calculate_displacements(self)
+
+        return self._displacements
+
+    def generate_displacements(
+        self,
+        window_size: int = 18,
+        overlap: int = 4,
+        dt: float = 0.003,
+        search_area_size: int = 20,
+        sig2noise_method: str = "peak2peak",
+        s2n_threshold: float = 1.3,
+        outlier_method: str = "localmean",
+        max_iter: int = 10,
+        kernal_size: int = 2,
+        scaling_factor: float = 96.52,
+        n_threads: int = None
+    ):
+        """
+        Generate displacement objects for all frames of present in the AICSDeformation object.
+        At the completion of this function, these displacements will be available from the `displacements` attribute.
+
+        Look to OpenPIV for details on how parameters interact with the actual displacement generation.
+        https://openpiv.readthedocs.io/en/latest/src/tutorial.html
+
+        Additionally, a grid search implementation is available in the case you want to have aicsdeformation
+        find the the best signal : noise given starting parameters, example below.
+
+        ```
+        from aicsdeformation.processing import grid_search_displacements
+        best, all_displacements = grid_search_displacements(frame_a, frame_b)
+        ```
+        """
+        # Get base
+        self._displacements = calculate_displacements(
+            self[:2],
+            window_size=window_size,
+            overlap=overlap,
+            dt=dt,
+            search_area_size=search_area_size,
+            sig2noise_method=sig2noise_method,
+            n_threads=n_threads
+        )
+
+        # Process
+        self._displacements = process_displacements(
+            self.displacements,
+            image_size=self.dims,
+            window_size=window_size,
+            overlap=overlap,
+            s2n_threshold=s2n_threshold,
+            outlier_method=outlier_method,
+            max_iter=max_iter,
+            kernal_size=kernal_size,
+            scaling_factor=scaling_factor,
+            n_threads=n_threads
+        )
 
         return self._displacements
 

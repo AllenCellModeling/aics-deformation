@@ -62,26 +62,3 @@ setup(
     version='0.1.0',
     zip_safe=False,
 )
-
-#######################################################################################################################
-
-# Handle full installation by overriding `setup` with `_pre_install`
-pre_install_requirements = [
-    'cython>=0.29.5',
-    'numpy>=1.16.1',
-]
-
-
-# Preinstall any dependancies
-def _pre_install(setup):
-    def install(package):
-        pipmain(['install', package])
-
-    for package in pre_install_requirements:
-        install(package)
-
-    return setup
-
-
-# Override setup with _pre_install
-setup = _pre_install(setup)
