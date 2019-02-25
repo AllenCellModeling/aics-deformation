@@ -12,3 +12,6 @@ pytest-cov==2.6.1
 pytest-raises>=0.10
 pytest-runner>=4.4
 jupyterlab>=0.35.4
+
+cython>=0.29.5
+numpy>=1.16.1
