@@ -59,7 +59,7 @@ def calculate_displacement(
     """
     # Expand frames if required
     if frames:
-        frame_a, frame_b = (*frames,)
+        frame_a, frame_b = frames
 
     # Handle numpy types
     frame_a = frame_a.astype(np.int32)
@@ -136,16 +136,16 @@ def grid_search_displacements(
     frame_a: np.ndarray = None,
     frame_b: np.ndarray = None,
     window_size: int = 16,
-    window_size_steps: int = 3,
+    window_size_steps: int = 7,
     window_size_step_size: int = 2,
     overlap: int = 4,
-    overlap_steps: int = 1,
+    overlap_steps: int = 3,
     overlap_step_size: int = 1,
     dt: float = 0.003,
-    dt_steps: int = 2,
+    dt_steps: int = 5,
     dt_step_size: float = 0.0005,
     search_area_size: int = 20,
-    search_area_size_steps: int = 1,
+    search_area_size_steps: int = 9,
     search_area_size_step_size: int = 2,
     sig2noise_method: str = "peak2peak",
     n_threads: int = None

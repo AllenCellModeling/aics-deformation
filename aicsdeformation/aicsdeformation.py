@@ -184,7 +184,7 @@ class AICSDeformation(object):
         """
         # Get base
         self._displacements = calculate_displacements(
-            self[:2],
+            self,
             window_size=window_size,
             overlap=overlap,
             dt=dt,
