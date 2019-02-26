@@ -27,12 +27,12 @@ log = logging.getLogger(__name__)
 
 class DisplacementFromParameters(NamedTuple):
     displacement: Displacement
-    parameters: Dict[str, Union[int, float]]
+    parameters: Dict[str, Union[int, float, str]]
 
 
 class ErrorFromParameters(NamedTuple):
     error: ValueError
-    parameters: Dict[str, Union[int, float]]
+    parameters: Dict[str, Union[int, float, str]]
 
 
 def calculate_displacement(
