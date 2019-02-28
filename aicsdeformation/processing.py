@@ -131,7 +131,7 @@ def calculate_displacements(frames: List[np.ndarray], n_threads: int = None, **k
 
     # Start multiprocessing
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        displacements = [displacement for displacement in executor.map(passdown, frame_pairs)]
+        displacements = list(executor.map(passdown, frame_pairs))
 
     return displacements
 
@@ -308,6 +308,6 @@ def process_displacements(displacements: List[Displacement], n_threads: int = No
 
     # Start multiprocessing
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        displacements = [displacement for displacement in executor.map(passdown, displacements)]
+        displacements = list(executor.map(passdown, displacements))
 
     return displacements
