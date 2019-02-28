@@ -112,13 +112,13 @@ def calculate_displacement(
     return Displacement(u=u, v=v, sig2noise=sig2noise)
 
 
-def calculate_displacements(frames: List[np.ndarray], n_threads: int = None, **kwargs) -> List[Displacement]:
+def calculate_displacements(frames: List[np.ndarray], n_processes: int = None, **kwargs) -> List[Displacement]:
     """
-    Wrapper around calculate_displacement to multithread calculate multiple frame pairs at the same time.
+    Wrapper around calculate_displacement to multiprocess calculate multiple frame pairs at the same time.
 
     :param frames: An ordered list of numpy.ndarray frames to create base Displacement objects for.
         Displacements will be created for n-1 frames where n is the length of the frames list.
-    :param n_threads: How many threads should be used for this operation. If None, os.cpu_count() is used.
+    :param n_processes: How many processes should be used for this operation. If None, os.cpu_count() is used.
     :param **kwargs: Keyword arguments passed down to the calculate_displacement function.
     :return: The completed list of generated base Displacement objects.
     """
@@ -183,7 +183,7 @@ def grid_search_displacements(
     search_area_size_steps: int = 12,
     search_area_size_step_size: int = 2,
     sig2noise_method: str = "peak2peak",
-    n_threads: int = None
+    n_processes: int = None
 ) -> Tuple[DisplacementFromParameters, List[Union[DisplacementFromParameters, ExceptionFromParameters]]]:
     """
     Grid search for parameters that result in the highest signal : noise.
@@ -198,7 +198,7 @@ def grid_search_displacements(
         This will be expanded to frame_a and frame_b if not None.
     :param frame_a: A single frame to be used to find displacements for.
     :param frame_b: A single frame to be used to find displacements for.
-    :param n_threads: How many threads should be used for the grid search operation. If None, os.cpu_count() is used.
+    :param n_processes: How many processes to be used for the grid search operation. If None, os.cpu_count() is used.
     :param *steps: Any parameter that ends in 'steps' is the number of steps away from the origin of the associated
         parameter you want to search. In the case where window_size is 16 and window_size_steps is 2, this will create
         displacements for the parameter window_size:
@@ -294,12 +294,12 @@ def process_displacement(
     return Displacement(x=x, y=y, u=d.u, v=d.v, mask=mask, sig2noise=d.sig2noise)
 
 
-def process_displacements(displacements: List[Displacement], n_threads: int = None, **kwargs) -> List[Displacement]:
+def process_displacements(displacements: List[Displacement], n_processes: int = None, **kwargs) -> List[Displacement]:
     """
-    Wrapper around process_displacement to multithread process multiple displacements at the same time.
+    Wrapper around process_displacement to multiprocess multiple displacements at the same time.
 
     :param displacements: A list of Displacements to finish processing.
-    :param n_threads: How many threads should be used for this operation. If None, os.cpu_count() is used.
+    :param n_processes: How many processes should be used for this operation. If None, os.cpu_count() is used.
     :param **kwargs: Keyword arguments passed down to the process_displacement function.
     :return: The completed list of generated base Displacement objects.
     """
