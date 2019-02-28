@@ -1,23 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import concurrent
 from functools import partial
 import itertools
 import logging
-from multiprocessing.dummy import Pool
 import numpy as np
 import openpiv.process
 import openpiv.scaling
 import openpiv.validation
 import openpiv.filters
-from typing import Dict, List, NamedTuple, Set, Tuple, Union
-from tqdm import tqdm
+from typing import Dict, List, Set, Tuple, Union
+import warnings
 
 from .types import Displacement
 
 ###############################################################################
 
-log = logging.getLogger(__name__)
+log = logging.getLogger()
+logging.basicConfig(level=logging.INFO,
+                    format='[%(asctime)s - %(name)s - %(lineno)3d][%(levelname)s] %(message)s')
 
 ###############################################################################
 
@@ -25,14 +27,43 @@ log = logging.getLogger(__name__)
 # https://openpiv.readthedocs.io/en/latest/src/tutorial.html
 
 
-class DisplacementFromParameters(NamedTuple):
-    displacement: Displacement
-    parameters: Dict[str, Union[int, float, str]]
+class DisplacementFromParameters(object):
+
+    def __init__(self, displacement: Displacement, parameters: Dict[str, Union[int, float, str]]):
+        self.displacement = displacement
+        self.parameters = parameters
+
+    def __str__(self):
+        return f"<DisplacementFromParameters [{self.displacement}, {self.parameters}]>"
+
+    def __repr__(self):
+        return str(self)
 
 
-class ErrorFromParameters(NamedTuple):
-    error: ValueError
-    parameters: Dict[str, Union[int, float, str]]
+class ExceptionFromParameters(object):
+
+    def __init__(self, err: Exception, parameters: Dict[str, Union[int, float, str]]):
+        self.err = err
+        self.parameters = parameters
+
+    def __str__(self):
+        return f"<ExceptionFromParameters [{self.parameters}]>"
+
+    def __repr__(self):
+        return str(self)
+
+
+# class Counter(object):
+#
+#     def __init__(self, current=0, total=1):
+#         self.current = current
+#         self.total = total
+#
+#     def __str__(self):
+#         return f"{self.current} / {self.total}"
+#
+#     def __repr__(self):
+#         return f"<Counter [current: {self.current}, total: {self.total}]>"
 
 
 def calculate_displacement(
@@ -98,10 +129,9 @@ def calculate_displacements(frames: List[np.ndarray], n_threads: int = None, **k
     # Create partial
     passdown = partial(calculate_displacement, **kwargs)
 
-    # Start multithreading
-    with Pool(n_threads) as pool:
-        # Map results
-        displacements = pool.map(passdown, frame_pairs)
+    # Start multiprocessing
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        displacements = [displacement for displacement in executor.map(passdown, frame_pairs)]
 
     return displacements
 
@@ -115,7 +145,12 @@ def _generate_window(center: Union[int, float], steps: int, step_size: Union[int
     return window
 
 
-def _grid_search_lambda(frames, frame_a, frame_b, param_permutation) -> DisplacementFromParameters:
+def _grid_search_lambda(
+    param_permutation,
+    frames,
+    frame_a,
+    frame_b
+) -> Union[DisplacementFromParameters, ExceptionFromParameters]:
     # Try except function to be used as lambda from grid search
     try:
         return DisplacementFromParameters(
@@ -128,28 +163,28 @@ def _grid_search_lambda(frames, frame_a, frame_b, param_permutation) -> Displace
             param_permutation
         )
     except ValueError as e:
-        return ErrorFromParameters(e, param_permutation)
+        return ExceptionFromParameters(e, param_permutation)
 
 
 def grid_search_displacements(
     frames: Tuple[np.ndarray] = None,
     frame_a: np.ndarray = None,
     frame_b: np.ndarray = None,
-    window_size: int = 16,
-    window_size_steps: int = 7,
+    window_size: int = 24,
+    window_size_steps: int = 8,
     window_size_step_size: int = 2,
-    overlap: int = 4,
-    overlap_steps: int = 3,
+    overlap: int = 6,
+    overlap_steps: int = 5,
     overlap_step_size: int = 1,
     dt: float = 0.003,
     dt_steps: int = 5,
     dt_step_size: float = 0.0005,
-    search_area_size: int = 20,
-    search_area_size_steps: int = 9,
+    search_area_size: int = 30,
+    search_area_size_steps: int = 12,
     search_area_size_step_size: int = 2,
     sig2noise_method: str = "peak2peak",
     n_threads: int = None
-) -> Tuple[DisplacementFromParameters, List[DisplacementFromParameters]]:
+) -> Tuple[DisplacementFromParameters, List[Union[DisplacementFromParameters, ExceptionFromParameters]]]:
     """
     Grid search for parameters that result in the highest signal : noise.
 
@@ -177,6 +212,9 @@ def grid_search_displacements(
     Look to OpenPIV for details on how parameters interact with the actual displacement generation.
     https://openpiv.readthedocs.io/en/latest/src/tutorial.html
     """
+    # Set up logger and ignore warnings
+    warnings.filterwarnings("ignore", category=RuntimeWarning)
+
     # Create all step lists
     window_sizes = _generate_window(window_size, window_size_steps, window_size_step_size)
     overlaps = _generate_window(overlap, overlap_steps, overlap_step_size)
@@ -187,29 +225,35 @@ def grid_search_displacements(
     parameter_keys = ["window_size", "overlap", "dt", "search_area_size"]
     permutations = list(itertools.product(window_sizes, overlaps, dts, search_area_sizes))
     parameter_permutations = [dict(zip(parameter_keys, permutations[i])) for i in range(len(permutations))]
+    log.info(f"Searching {len(parameter_permutations)} parameter permutations")
 
-    # Starting multithreading
-    with Pool(n_threads) as pool:
-        dfps = list(tqdm(pool.imap(
-            lambda param_permutation: _grid_search_lambda(
-                frames=frames,
-                frame_a=frame_a,
-                frame_b=frame_b,
-                param_permutation=param_permutation
-            ),
-            parameter_permutations
-        ), total=len(parameter_permutations)))
+    # Create partial
+    passdown = partial(_grid_search_lambda, frames=frames, frame_a=frame_a, frame_b=frame_b)
 
-    # Find max
+    # Used for determining the best DisplacementFromParameters and storing all results
     best_dfp = None
-    best_s2n = -1
-    for dfp in dfps:
-        try:
-            if dfp.displacement.median_s2n > best_s2n:
-                best_dfp = dfp
-                best_s2n = dfp.displacement.median_s2n
-        except AttributeError:
-            pass
+    best_s2n = 0
+    dfps = []
+
+    # Multiprocess the search
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        results = executor.map(passdown, parameter_permutations)
+
+        # Show progress and find max
+        for i, dfp in enumerate(results):
+            try:
+                if dfp.displacement.median_s2n > best_s2n:
+                    best_dfp = dfp
+                    best_s2n = dfp.displacement.median_s2n
+            except AttributeError:
+                pass
+
+            # Always append new
+            dfps.append(dfp)
+
+            # Construct completed percent
+            completed = str("%.2f" % round(((i + 1) / len(parameter_permutations)) * 100, 3))
+            log.info(f"Completed {completed}%: {dfp}")
 
     return best_dfp, dfps
 
@@ -262,9 +306,8 @@ def process_displacements(displacements: List[Displacement], n_threads: int = No
     # Create partial
     passdown = partial(process_displacement, **kwargs)
 
-    # Start multithreading
-    with Pool(n_threads) as pool:
-        # Map results
-        displacements = pool.map(passdown, displacements)
+    # Start multiprocessing
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        displacements = [displacement for displacement in executor.map(passdown, displacements)]
 
     return displacements
