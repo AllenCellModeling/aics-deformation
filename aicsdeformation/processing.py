@@ -53,19 +53,6 @@ class ExceptionFromParameters(object):
         return str(self)
 
 
-# class Counter(object):
-#
-#     def __init__(self, current=0, total=1):
-#         self.current = current
-#         self.total = total
-#
-#     def __str__(self):
-#         return f"{self.current} / {self.total}"
-#
-#     def __repr__(self):
-#         return f"<Counter [current: {self.current}, total: {self.total}]>"
-
-
 def calculate_displacement(
     frames: Tuple[np.ndarray] = None,
     frame_a: np.ndarray = None,

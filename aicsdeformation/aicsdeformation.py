@@ -165,7 +165,7 @@ class AICSDeformation(object):
         max_iter: int = 10,
         kernal_size: int = 2,
         scaling_factor: float = 96.52,
-        n_threads: int = None
+        n_processes: int = None
     ):
         """
         Generate displacement objects for all frames of present in the AICSDeformation object.
@@ -190,7 +190,7 @@ class AICSDeformation(object):
             dt=dt,
             search_area_size=search_area_size,
             sig2noise_method=sig2noise_method,
-            n_threads=n_threads
+            n_processes=n_processes
         )
 
         # Process
@@ -204,7 +204,7 @@ class AICSDeformation(object):
             max_iter=max_iter,
             kernal_size=kernal_size,
             scaling_factor=scaling_factor,
-            n_threads=n_threads
+            n_processes=n_processes
         )
 
         return self._displacements
