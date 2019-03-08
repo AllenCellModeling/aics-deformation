@@ -157,17 +157,17 @@ def grid_search_displacements(
     frames: Tuple[np.ndarray] = None,
     frame_a: np.ndarray = None,
     frame_b: np.ndarray = None,
-    window_size: int = 24,
-    window_size_steps: int = 8,
+    window_size_min: int = 16,
+    window_size_max: int = 24,
     window_size_step_size: int = 2,
-    overlap: int = 6,
-    overlap_steps: int = 5,
+    overlap_min: int = 4,
+    overlap_max: int = 8,
     overlap_step_size: int = 1,
-    dt: float = 0.003,
-    dt_steps: int = 5,
-    dt_step_size: float = 0.0005,
-    search_area_size: int = 30,
-    search_area_size_steps: int = 12,
+    dt_min: float = 0.002,
+    dt_max: int = 0.003,
+    dt_step_size: float = 0.00025,
+    search_area_size_min: int = 16,
+    search_area_size_max: int = 24,
     search_area_size_step_size: int = 2,
     sig2noise_method: str = "peak2peak",
     n_processes: int = None
@@ -186,13 +186,6 @@ def grid_search_displacements(
     :param frame_a: A single frame to be used to find displacements for.
     :param frame_b: A single frame to be used to find displacements for.
     :param n_processes: How many processes to be used for the grid search operation. If None, os.cpu_count() is used.
-    :param *steps: Any parameter that ends in 'steps' is the number of steps away from the origin of the associated
-        parameter you want to search. In the case where window_size is 16 and window_size_steps is 2, this will create
-        displacements for the parameter window_size:
-            [16 - step_size * 2, 16 - step_size, 16, 16 + step_size, 16 + step_size * 2]
-    :param *step_size: Any parameter that ends in 'step_size' is the value for how large each step should be from the
-        origin. In the case where window_size is 16, window_size_steps is 2, and window_size_step_size is 1, this will
-        creat displacements for the parameter window_size: [14, 15, 16, 17, 18]
     :return: Tuple of the best DisplacementFromParameters and a list of all DisplacementFromParameters searched. Best
         is the DisplacementFromParameters with the highest median signal : noise out of all DisplacementFromParameters.
 
@@ -203,10 +196,12 @@ def grid_search_displacements(
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
     # Create all step lists
-    window_sizes = _generate_window(window_size, window_size_steps, window_size_step_size)
-    overlaps = _generate_window(overlap, overlap_steps, overlap_step_size)
-    dts = _generate_window(dt, dt_steps, dt_step_size)
-    search_area_sizes = _generate_window(search_area_size, search_area_size_steps, search_area_size_step_size)
+    window_sizes = [int(x) for x in np.arange(window_size_min, window_size_max, window_size_step_size)]
+    overlaps = [int(x) for x in np.arange(overlap_min, overlap_max, overlap_step_size)]
+    dts = list(np.arange(dt_min, dt_max, dt_step_size))  # keep as floats
+    search_area_sizes = [
+        int(x) for x in np.arange(search_area_size_min, search_area_size_max, search_area_size_step_size)
+    ]
 
     # Create all permutations
     parameter_keys = ["window_size", "overlap", "dt", "search_area_size"]
