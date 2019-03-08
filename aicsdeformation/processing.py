@@ -117,7 +117,7 @@ def calculate_displacements(frames: List[np.ndarray], n_processes: int = None, *
     passdown = partial(calculate_displacement, **kwargs)
 
     # Start multiprocessing
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(n_processes) as executor:
         displacements = list(executor.map(passdown, frame_pairs))
 
     return displacements
@@ -223,7 +223,7 @@ def grid_search_displacements(
     dfps = []
 
     # Multiprocess the search
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(n_processes) as executor:
         results = executor.map(passdown, parameter_permutations)
 
         # Show progress and find max
@@ -294,7 +294,7 @@ def process_displacements(displacements: List[Displacement], n_processes: int = 
     passdown = partial(process_displacement, **kwargs)
 
     # Start multiprocessing
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(n_processes) as executor:
         displacements = list(executor.map(passdown, displacements))
 
     return displacements
