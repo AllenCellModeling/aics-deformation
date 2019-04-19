@@ -11,26 +11,59 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = [
+requirements = [  # 'opencv-python-headless',  # for SIFT functionality MUST conda install opencv or build source
+    'aicsimageio',
     'cython>=0.29.5',
+    'imageio',
     'numpy>=1.16.1',
-    'openpiv>=0.21.2',
-    'tifffile>=2019.2.10',
-]
-
-setup_requirements = [
-    'pytest-runner>=4.4',
+    'openpiv',
+    'pandas',
+    'scikit-video'
+    # 'opencv-python',
 ]
 
 test_requirements = [
+    'codecov',
+    'flake8',
+    'pytest',
+    'pytest-cov',
+    'pytest-raises',
+]
+
+setup_requirements = ['pytest-runner', ]
+
+dev_requirements = [
+    'bumpversion>=0.5.3',
+    'wheel>=0.33.1',
+    'flake8>=3.7.7',
+    'tox>=3.5.2',
+    'coverage>=5.0a4',
+    'Sphinx>=2.0.0b1',
+    'twine>=1.13.0',
     'pytest>=4.3.0',
     'pytest-cov==2.6.1',
     'pytest-raises>=0.10',
+    'pytest-runner>=4.4',
+]
+
+interactive_requirements = [
+    'altair',
+    'jupyterlab',
+    'matplotlib',
 ]
 
 extra_requirements = {
     'test': test_requirements,
     'setup': setup_requirements,
+    'dev': dev_requirements,
+    'interactive': interactive_requirements,
+    'all': [
+        *requirements,
+        *test_requirements,
+        *setup_requirements,
+        *dev_requirements,
+        *interactive_requirements
+    ]
 }
 
 setup(
