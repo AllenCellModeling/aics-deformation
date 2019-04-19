@@ -2,18 +2,22 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from pandas import DataFrame
+
+npvec = np.ndarray
+npgrid = np.ndarray
 
 
 class Displacement(object):
 
     def __init__(
         self,
-        u: np.ndarray,
-        v: np.ndarray,
-        sig2noise: np.ndarray,
-        x: np.ndarray = None,
-        y: np.ndarray = None,
-        mask: np.ndarray = None
+        u: npvec,
+        v: npvec,
+        sig2noise: npvec,
+        x: npvec = None,
+        y: npvec = None,
+        mask: npvec = None
     ):
         self._x = x
         self._y = y
@@ -21,29 +25,37 @@ class Displacement(object):
         self._u = u
         self._v = v
         self._sig2noise = sig2noise
+        self._m = None
+        self._m_grid = None
 
         # Lazy load
         self._median_s2n = None
 
     @property
-    def x(self):
+    def x(self) -> npvec:
         return self._x
 
     @property
-    def y(self):
+    def y(self) -> npvec:
         return self._y
 
     @property
-    def u(self):
+    def u(self) -> npvec:
         return self._u
 
     @property
-    def v(self):
+    def v(self) -> npvec:
         return self._v
 
     @property
-    def mask(self):
+    def mask(self) -> npvec:
         return self._mask
+
+    @property
+    def magnitude(self) -> npvec:
+        if self._m is None:
+            self._m = np.sqrt(self._u ** 2 + self._v ** 2)
+        return self._m
 
     @property
     def sig2noise(self):
@@ -56,8 +68,16 @@ class Displacement(object):
 
         return self._median_s2n
 
+    @property
+    def magnitude_grid(self) -> npgrid:
+        if self._m_grid is None:
+            df = DataFrame({'x': self.x.flatten(), 'y': self.y.flatten(), 'm': self.magnitude.flatten()})
+            self._m_grid = df.pivot('y', 'x', 'm').values
+        return self._m_grid
+
     def __str__(self):
-        return f"<Displacement [sig2noise: {self.median_s2n}]>"
+        return f"x:{self._x.shape}, y:{self._y.shape}, u:{self._u.shape}"
+        # return f"<Displacement [sig2noise: {self.median_s2n}]>"
 
     def __repr__(self):
         return str(self)
