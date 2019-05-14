@@ -8,12 +8,17 @@ from ..types import Displacement
 from ..loaders.path_images import PathImages
 
 
-class OverlayFinisher:
+class OverlayGenerator:
     """
     This class uses the generated images and displacements (u, v) to create deformation heatmaps
     with cell max-projection overlays
     """
     def __init__(self, displacement_list: List[Displacement], cell_images: PathImages, over_path: Path):
+        """
+        :param displacement_list: List of displacement objects for each pair of images
+        :param cell_images: The PathImages(List) that contains the paths to the max projection images
+        :param over_path: The directory Path to save the overlay deformation / cell images to
+        """
         self.disps = displacement_list
         self.cell_images = cell_images
         self.over_home = over_path

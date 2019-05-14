@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 import random
 
-from aicsdeformation.loaders.czi_movie_loader import CziMoveLoader
+from aicsdeformation.loaders.czi_time_lapse_loader import CziTimeLapseLoader
 
 
 class ImgContainer(object):
@@ -44,7 +44,7 @@ def instantiate_czi_movie_loader(data_dir):
     if working_folder.exists():  # if the folder exists remove it before it's passed to the class to construct
         rmtree(working_folder)
     img_obj = ImgContainer()
-    cziml = CziMoveLoader(pathname=fname, test_data=img_obj.stack)
+    cziml = CziTimeLapseLoader(pathname=fname, test_data=img_obj.stack)
     return cziml, fname.resolve()
 
 
@@ -57,7 +57,7 @@ def get_czi_class_and_time(data_dir):
     if working_folder.exists():  # if the folder exists remove it before it's passed to the class to construct
         rmtree(working_folder)
     img_obj = ImgContainer()
-    cziml = CziMoveLoader(pathname=fname, test_data=img_obj.stack)
+    cziml = CziTimeLapseLoader(pathname=fname, test_data=img_obj.stack)
     return cziml, img_obj.n_of_time_points()
 
 
@@ -121,7 +121,7 @@ def test_max_projection():
     for z_i, y_i, x_i in zip(zs, ys, xs):
         dcube[z_i, y_i, x_i] = d_slice[y_i, x_i] = 1
 
-    d_test = CziMoveLoader.max_projection(dcube)
+    d_test = CziTimeLapseLoader.max_projection(dcube)
     for y_i in range(0, 99):
         for x_i in range(0, 99):
             assert d_slice[y_i, x_i] == d_test[y_i, x_i]
