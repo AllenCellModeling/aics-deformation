@@ -10,7 +10,6 @@ from .helpers import raise_a_if_b
 from .exception import MinBeadMatchNotMetException, InsufficientTimePointsException
 from .loader_abc import LoaderABC
 from .path_images import PathImages
-from ..types import Displacement
 
 
 NpImage = np.ndarray  # (Y, X) data image
@@ -20,7 +19,7 @@ Char = str  # string of length 1
 SIFT_Type = cv2.xfeatures2d_SIFT
 
 
-class CziMoveLoader(LoaderABC):
+class CziTimeLapseLoader(LoaderABC):
     """
     This class breaks a single scene movie of cells on beads and finds the frame
     of the `best` bead plane for each time step and generates a corresponding cell

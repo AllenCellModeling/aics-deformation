@@ -1,8 +1,5 @@
 from enum import Enum, unique
 from imageio import imread
-from pathlib import Path
-import numpy as np
-from typing import Union
 
 
 class PathImages(list):
