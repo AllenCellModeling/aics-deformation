@@ -16,7 +16,7 @@ requirements = [  # 'opencv-python-headless',  # for SIFT functionality MUST con
     'cython>=0.29.5',
     'imageio',
     'numpy>=1.16.1',
-    'openpiv',
+    # 'openpiv',
     'pandas',
     'scikit-video'
     # 'opencv-python',
@@ -78,14 +78,18 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     description="Processing and visualization tools used for interacting with deformation projects.",
-    entry_points={},
+    entry_points={
+        'console_scripts': [
+            'generate_deformation_map=aicsdeformation.bin.deformation_map:main'
+        ],
+    },
     install_requires=requirements,
     license="Allen Institute Software License",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords='aicsdeformation',
     name='aicsdeformation',
-    packages=find_packages(include=['aicsdeformation']),
+    packages=find_packages(exclude=['tests', '*.tests', '*.tests.*']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,

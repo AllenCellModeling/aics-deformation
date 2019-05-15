@@ -24,14 +24,14 @@ class OverlayGenerator:
         self.over_home = over_path
         self.over_images = PathImages()
 
-    def finish(self) -> None:
+    def process(self) -> None:
         """
         This is the function to call from main that will run use the member functions to
         generate a finished deformation movie.
         :return: None
         """
         self.make_heatmap_cell_overlays()
-        self.images_to_movie()
+        self.generate_mp4()
 
     def create_overlay(self, disp: Displacement, fg_path: Path, fg_img: np.ndarray, extent: list) -> Path:
         """
@@ -70,7 +70,7 @@ class OverlayGenerator:
         )
         self.cell_images.set_image()  # set the iterator back to the default of returning images
 
-    def images_to_movie(self) -> None:
+    def generate_mp4(self) -> None:
         """
         Take the overlay images and composite them into a movie
         :return: None

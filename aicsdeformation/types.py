@@ -76,8 +76,7 @@ class Displacement(object):
         return self._m_grid
 
     def __str__(self):
-        return f"x:{self._x.shape}, y:{self._y.shape}, u:{self._u.shape}"
-        # return f"<Displacement [sig2noise: {self.median_s2n}]>"
+        return f"<Displacement [x:{self._x.shape}, y:{self._y.shape}, u:{self._u.shape}, sig2noise: {self.median_s2n}]>"
 
     def __repr__(self):
         return str(self)
