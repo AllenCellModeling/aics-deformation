@@ -1,10 +1,14 @@
 from argparse import ArgumentParser
+import logging
 from pathlib import Path
 import pickle
 
 from aicsdeformation.loaders.czi_time_lapse_loader import CziTimeLapseLoader
 from aicsdeformation.aicsdeformation import AICSDeformation
 from aicsdeformation.finishers.overlay_generator import OverlayGenerator
+
+log = logging.getLogger("Deformations")
+logging.captureWarnings()
 
 
 def main():
@@ -15,7 +19,7 @@ def main():
 
     # process the image file into it's required input folders and image files
     img = CziTimeLapseLoader(pathname=Path(js_args.image_path))
-    img.run_before()
+    img.process()
 
     # call Jackson's code here to launch openPIV
     aics_def = AICSDeformation(frames=img.bead_images)
@@ -30,7 +34,7 @@ def main():
 
     # create deformation / cell image overlays
     fin = OverlayGenerator(disp_list, img.cell_images, img.over_home)
-    fin.finish()
+    fin.process()
 
 
 if __name__ == '__main__':

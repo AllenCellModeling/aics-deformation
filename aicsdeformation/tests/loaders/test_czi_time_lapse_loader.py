@@ -87,7 +87,7 @@ def test_cells(instantiate_czi_movie_loader):
 
 def test_time_length(get_czi_class_and_time):
     cziml, time = get_czi_class_and_time
-    t_length = cziml.last_time_frame()
+    t_length = len(cziml)
     assert t_length == time
 
 

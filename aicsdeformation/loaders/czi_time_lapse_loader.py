@@ -59,7 +59,7 @@ class CziTimeLapseLoader(LoaderABC):
         self.over_images = PathImages()  # Overlay images of deformation and cell
         self.warp_ms = None
 
-    def last_time_frame(self) -> int:
+    def __len__(self) -> int:
         """
         Get the total number of time-points
         :return: number of time-points
@@ -67,18 +67,19 @@ class CziTimeLapseLoader(LoaderABC):
         t_index = self.image_get_index_order('T')
         return self.image.shape[t_index]
 
-    def run_before(self) -> None:
+    def process(self) -> PathImages:
         """
         This command launches all of the pre-processing commands to generate the bead
         plane images as well as the max projection images.
         :return: None
         """
-        ti_max = self.last_time_frame()
+        ti_max = len(self)
         dcube = self.image.get_image_data(out_orientation="TZYX", C=self.bead_channel)
         slice_array = self.generate_bead_imgs(ti_max, dcube)
         frame_k_dict = self.cv_find_points(slice_array)
         self.warp_ms = [self.align_warp_and_write_beads(slice_array, frame_k_dict, i) for i in range(len(slice_array))]
         self.generate_projection_imgs(ti_max=ti_max, dcube=dcube)
+        return self.bead_images
 
     def generate_bead_imgs(self, ti_max: int, dcube: Dcube) -> List[NpImage]:
         """
