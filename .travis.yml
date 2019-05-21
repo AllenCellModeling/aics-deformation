@@ -16,8 +16,6 @@ install:
   - conda info -a
   - conda create -q -n test-env python=$TRAVIS_PYTHON_VERSION
   - source activate test-env
-#  - conda install opencv
-#  - conda install -c conda-forge openpiv
   - pip install -U tox-travis codecov
   - pip install tox-conda
 

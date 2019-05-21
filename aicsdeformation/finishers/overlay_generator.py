@@ -1,8 +1,7 @@
-import matplotlib.pyplot as plt
+import cv2
 import numpy as np
 from pathlib import Path
 from typing import List
-from skvideo.io import FFmpegWriter
 
 from ..types import Displacement
 from ..loaders.path_images import PathImages
@@ -23,6 +22,8 @@ class OverlayGenerator:
         self.cell_images = cell_images
         self.over_home = over_path
         self.over_images = PathImages()
+        self.min_data_value = 2250  # these are hardcoded for now based on histograms of the deformation data
+        self.max_data_value = 4750
 
     def process(self) -> None:
         """
@@ -33,24 +34,26 @@ class OverlayGenerator:
         self.make_heatmap_cell_overlays()
         self.generate_mp4()
 
-    def create_overlay(self, disp: Displacement, fg_path: Path, fg_img: np.ndarray, extent: list) -> Path:
+    def create_overlay(self, disp: Displacement, fg_path: Path, fg_img: np.ndarray) -> Path:
         """
         Create the overlay of displacement and max-projection
         :param disp: The displacement object containing x, y, u, v, mask
         :param fg_path: path to the foreground image (cell max-projection)
         :param fg_img: path to the background image (deformation heatmap)
-        :param extent: The x, y - min max bounds (x_min, x_max, y_min, y_max)
         :return: path to the output overlay image
         """
-        fig = plt.figure(frameon=False)
-        plt.imshow(disp.magnitude_grid, cmap=plt.cm.magma, alpha=.9, interpolation='nearest',
-                   extent=extent, vmin=0, vmax=15, origin='lower')
-        plt.imshow(fg_img, cmap=plt.cm.gray, alpha=.3, interpolation='bilinear', extent=extent)
-        plt.tight_layout(True)
-        plt.axis('off')
+        # hardcode scaling for now
+        fgimg = cv2.imread(str(fg_path))
+        dmag = np.nan_to_num(disp.magnitude_grid, copy=True)
+        dmag = np.uint8(np.clip(255*(dmag-self.min_data_value)/(self.max_data_value - self.min_data_value), 0, 255))
+        dx = int((fgimg.shape[0] - dmag.shape[0])/2)
+        dy = int((fgimg.shape[1] - dmag.shape[1])/2)
+        result = np.zeros(fgimg.shape)
+        result[dx:dx+dmag.shape[0], dy:dy+dmag.shape[1], 2] = dmag
+        result = np.flip(result, 0)
+        result[:, :, 0] = fgimg[:, :, 0]
         fname = self.over_home / fg_path.name
-        fig.savefig(fname, bbox_inches='tight')
-        fig.clear()
+        cv2.imwrite(str(fname), result)
         return fname
 
     def make_heatmap_cell_overlays(self) -> None:
@@ -58,15 +61,9 @@ class OverlayGenerator:
         This batches through all the time-points to create the deformation / cell overlays
         :return: None
         """
-        x_min_v = [np.min(d.x) for d in self.disps]
-        x_max_v = [np.max(d.x) for d in self.disps]
-        y_min_v = [np.min(d.y) for d in self.disps]
-        y_max_v = [np.max(d.y) for d in self.disps]
-        extents = zip(x_min_v, x_max_v, y_min_v, y_max_v)
-
         self.cell_images.set_path_image()  # set the iterator to give path, image
         self.over_images.extend(
-            [self.create_overlay(d, p, i, e) for d, (p, i), e in zip(self.disps, self.cell_images, extents)]
+            [self.create_overlay(d, p, i) for d, (p, i) in zip(self.disps, self.cell_images)]
         )
         self.cell_images.set_image()  # set the iterator back to the default of returning images
 
@@ -75,7 +72,17 @@ class OverlayGenerator:
         Take the overlay images and composite them into a movie
         :return: None
         """
-        v_filepath = self.over_home / "movie.mp4"
-        writer = FFmpegWriter(v_filepath)
-        [writer.writeFrame(img) for img in self.over_images]
-        writer.close()
+        self.over_images.set_path()
+        first = cv2.imread(str(self.over_images[0]))
+        height, width, layers = first.shape
+
+        v_filepath = self.over_home / "movie.mpg"
+        video = cv2.VideoWriter(filename=str(v_filepath),
+                                fourcc=cv2.VideoWriter_fourcc(*'MPEG'),
+                                fps=10,
+                                frameSize=(width, height))
+        for imp in self.over_images:
+            print(imp)
+            fr = cv2.imread(str(imp))
+            video.write(fr)
+        video.release()

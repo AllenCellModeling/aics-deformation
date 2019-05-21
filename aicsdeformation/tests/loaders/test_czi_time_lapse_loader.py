@@ -3,7 +3,7 @@ import pytest
 import numpy as np
 import random
 
-from aicsdeformation.loaders.czi_time_lapse_loader import CziTimeLapseLoader
+from aicsdeformation.loaders.czi_time_lapse_loader import CziTimeLapseLoader, CellChannelType
 
 
 class ImgContainer(object):
@@ -16,11 +16,11 @@ class ImgContainer(object):
         x_mag = self.input_shape[-1]
         y_mag = self.input_shape[-2]
         # set T=0, C=0 Z=4 to a bead slice (non-zeros)
-        beads = self.stack[0, 0, 4, :, :]
-        beads2 = self.stack[0, 0, 5, :, :]
+        beads = self.stack[0, 1, 4, :, :]
+        beads2 = self.stack[0, 1, 5, :, :]
         samples = int(x_mag*y_mag/5)
-        xs = [random.randrange(0, x_mag) for i in range(samples)]
-        ys = [random.randrange(0, y_mag) for i in range(samples)]
+        xs = [random.randrange(0, x_mag) for _ in range(samples)]
+        ys = [random.randrange(0, y_mag) for _ in range(samples)]
         for y_i, x_i in zip(ys, xs):
             beads[y_i, x_i] = beads2[y_i, x_i] = 1
         self.dims = dims
@@ -46,6 +46,19 @@ def instantiate_czi_movie_loader(data_dir):
     img_obj = ImgContainer()
     cziml = CziTimeLapseLoader(pathname=fname, test_data=img_obj.stack)
     return cziml, fname.resolve()
+
+
+# @pytest.fixture
+# def instantiate_czi_movie_loader_two(data_dir):
+#     from pathlib import Path
+#     from shutil import rmtree
+#     fname = data_dir / '20190425_S08_001-04-Scene-3-P4-B03.czi'
+#     working_folder = fname.parent / Path(fname.stem)
+#     if working_folder.exists():  # if the folder exists remove it before it's passed to the class to construct
+#         rmtree(working_folder)
+#     img_obj = ImgContainer()
+#     cziml = CziTimeLapseLoader(pathname=fname)
+#     return cziml, fname.resolve()
 
 
 @pytest.fixture
@@ -121,7 +134,20 @@ def test_max_projection():
     for z_i, y_i, x_i in zip(zs, ys, xs):
         dcube[z_i, y_i, x_i] = d_slice[y_i, x_i] = 1
 
-    d_test = CziTimeLapseLoader.max_projection(dcube)
+    lb = CellChannelType.BRIGHT_FIELD
+    d_test = CziTimeLapseLoader.max_projection(dcube, lb)
+    d_slice *= 255
+    d_slice = np.uint8(d_slice)
     for y_i in range(0, 99):
         for x_i in range(0, 99):
             assert d_slice[y_i, x_i] == d_test[y_i, x_i]
+
+
+# def test_problematic_czi(instantiate_czi_movie_loader_two):
+#     cziml, fname = instantiate_czi_movie_loader_two
+#     l_data = cziml.image.get_image_data(out_orientation="ZYX", T=0, C=1)
+#     d_slice = cziml.find_bead_slice(l_data, 0)
+#     y_max, x_max = l_data[6, :, :].shape
+#     for y_i in range(y_max):
+#         for x_i in range(x_max):
+#             assert (l_data[6, y_i, x_i] == d_slice[y_i, x_i])

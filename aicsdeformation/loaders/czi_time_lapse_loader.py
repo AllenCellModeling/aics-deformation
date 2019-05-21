@@ -1,4 +1,5 @@
 import cv2
+from enum import Enum
 import numpy as np
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -17,6 +18,20 @@ Dcube = np.ndarray  # (Z, Y, X) data cube
 Matrix = np.ndarray
 Char = str  # string of length 1
 SIFT_Type = cv2.xfeatures2d_SIFT
+CCT_Type = 'CellChannelType'  # will eventually be CellChannelType but str for now to support <3.7
+
+
+class CellChannelType(Enum):
+    """
+    CellChannelType defines words that can be used as Integers and a dictionary of associated lower bounds
+    """
+    BRIGHT_FIELD = 0
+    GFP = 1
+
+    @classmethod
+    def lower_bound(cls, channel: CCT_Type):
+        lb = {cls.BRIGHT_FIELD: 1, cls.GFP: 50}  # percentage to use as a lower bound to clean up the 2D projection
+        return lb[channel]
 
 
 class CziTimeLapseLoader(LoaderABC):
@@ -26,13 +41,17 @@ class CziTimeLapseLoader(LoaderABC):
     max_project image for overlay post-piv processing.
     """
 
-    def __init__(self, pathname: Path, bead_channel: Optional[int] = 0, test_data: Optional[np.ndarray] = None):
+    def __init__(self, pathname: Path, bead_channel: Optional[int] = 1, cell_channel: Optional[int] = 0,
+                 cell_channel_type: Optional[CellChannelType] = CellChannelType.BRIGHT_FIELD,
+                 test_data: Optional[np.ndarray] = None):
         """
         Take the starting image with path to enable the construction of sub-folders and frames from the czi movie.
         If test_data is supplied the filepath is not checked it's simply used to compute a folder destination.
         :param pathname: A Path containing the filename and path to get to the
                             czi or tiff image [or a fake if using test_data].
-        :param bead_channel: Optional, The channel the beads should be present in
+        :param bead_channel: Optional, The channel the beads should be present in (will likely be needed)
+        :param cell_channel: Optional, The channel the cell/structure should be present in (will likely be needed)
+        :param cell_channel_type: Optional, Is it bright field or GFP etc?
         :param test_data: Optional, For testing. A data cube to enable faster
                             testing as opposed to a large czi/tiff file.
             example `/usr/local/test.czi'
@@ -51,9 +70,13 @@ class CziTimeLapseLoader(LoaderABC):
         self.over_home.mkdir(mode=0o755, parents=True)
         self.tmp_bead_home.mkdir(mode=0o755, parents=True)
         self.tmp_cell_home.mkdir(mode=0o755, parents=True)
-        load_this = [x for x in (pathname, test_data) if x is not None]
-        self.image = AICSImage(load_this[-1], dims="TCZYX")
+        load_this = pathname
+        if test_data is not None:
+            load_this = test_data
+        self.image = AICSImage(load_this, dims="TCZYX")
         self.bead_channel = bead_channel
+        self.cell_channel = cell_channel
+        self.cell_channel_type = cell_channel_type
         self.bead_images = PathImages()
         self.cell_images = PathImages()
         self.over_images = PathImages()  # Overlay images of deformation and cell
@@ -74,25 +97,26 @@ class CziTimeLapseLoader(LoaderABC):
         :return: None
         """
         ti_max = len(self)
-        dcube = self.image.get_image_data(out_orientation="TZYX", C=self.bead_channel)
-        slice_array = self.generate_bead_imgs(ti_max, dcube)
+        slice_array = self.generate_bead_imgs(ti_max)
         frame_k_dict = self.cv_find_points(slice_array)
         self.warp_ms = [self.align_warp_and_write_beads(slice_array, frame_k_dict, i) for i in range(len(slice_array))]
-        self.generate_projection_imgs(ti_max=ti_max, dcube=dcube)
+        self.generate_projection_imgs(ti_max=ti_max)
         return self.bead_images
 
-    def generate_bead_imgs(self, ti_max: int, dcube: Dcube) -> List[NpImage]:
+    def generate_bead_imgs(self, ti_max: int) -> List[NpImage]:
         """
         Find the bead image slice for each time-point and load them into a list
         :return: list of bead images ( 1 per time-point )
         """
+        dcube = self.image.get_image_data(out_orientation="TZYX", C=self.bead_channel)
         return [self.find_bead_slice(dcube[t_i, :, :, :], t_i) for t_i in range(0, ti_max)]
 
-    def generate_projection_imgs(self, ti_max: int, dcube: Dcube) -> None:
-        imgs = [self.max_projection(dcube[ti, :, :, :]) for ti in range(ti_max)]
+    def generate_projection_imgs(self, ti_max: int) -> None:
+        dcube = self.image.get_image_data(out_orientation="TZYX", C=self.cell_channel)
+        imgs = [self.max_projection(dcube[ti, :, :, :], self.cell_channel_type) for ti in range(ti_max)]
         w_imgs = [cv2.warpPerspective(imgs[i], self.warp_ms[i], (imgs[0].shape[1], imgs[0].shape[0]))
                   for i in range(len(imgs))]
-        f_names = [self.cell_home / f"cells{str(ti).zfill(3)}.jpg" for ti in range(ti_max)]
+        f_names = [self.cell_home / f"cells{str(ti).zfill(3)}.png" for ti in range(ti_max)]
         [imwrite(str(f_name), img) for f_name, img in zip(f_names, w_imgs)]
         self.cell_images.extend(f_names)
 
@@ -105,9 +129,7 @@ class CziTimeLapseLoader(LoaderABC):
         try:
             t_index = self.image.dims.index(letter)
         except ValueError:
-            raise InsufficientTimePointsException(
-                "Error: image file needs to contain a time axis to do temporal alignment!"
-            )
+            raise InsufficientTimePointsException(self.image.shape)
         return t_index
 
     def find_bead_slice(self, tmp_data: Dcube, time_idx: int) -> NpImage:
@@ -125,8 +147,9 @@ class CziTimeLapseLoader(LoaderABC):
         z_idx = np.argmax(z_data)
         dz2_ind = np.argmin(dz2)
         if z_idx == dz2_ind or dz2[dz2_ind] < 0.0:
-            filename = self.tmp_bead_home / f"bead_{str(time_idx).zfill(4)}_z{str(z_idx).zfill(3)}.jpg"
+            filename = self.tmp_bead_home / f"bead_{str(time_idx).zfill(4)}_z{str(z_idx).zfill(3)}.png"
             slice_d = tmp_data[z_idx, :, :]
+            slice_d = self.rescale_img(slice_d, CellChannelType.BRIGHT_FIELD)
             imwrite(filename, slice_d)
         return slice_d
 
@@ -164,7 +187,7 @@ class CziTimeLapseLoader(LoaderABC):
         """
         m = self.align_pair(k_frames[idx], k_frames[0])
         w_img = cv2.warpPerspective(bead_imgs[idx], m, (bead_imgs[0].shape[1], bead_imgs[0].shape[0]))
-        f_name = self.bead_home / f"beads{str(idx).zfill(3)}.jpg"
+        f_name = self.bead_home / f"beads{str(idx).zfill(3)}.png"
         self.bead_images.append(f_name)
         imwrite(f_name, w_img)
         return m
@@ -198,10 +221,27 @@ class CziTimeLapseLoader(LoaderABC):
         return matrix
 
     @classmethod
-    def max_projection(cls, zyx_data: Dcube) -> NpImage:
+    def rescale_img(cls, img: NpImage, channel_type: CellChannelType) -> NpImage:
+        """
+        Rescale the image to improve the image quality
+        :param img: a 2D NDArray of the image
+        :param channel_type: BRIGHT_FIELD, or GFP
+        :return: a 2D grid of uint8 values
+        """
+        min_cutoff = CellChannelType.lower_bound(channel_type)
+        yx_ceil = np.percentile(img, 99.8)
+        yx_floor = np.percentile(img, min_cutoff)
+        img[img > yx_ceil] = yx_ceil
+        img[img < yx_floor] = yx_floor
+        return np.uint8(255*((img - yx_floor) / (yx_ceil - yx_floor)))
+
+    @classmethod
+    def max_projection(cls, zyx_data: Dcube, channel_type: CellChannelType) -> NpImage:
         """
         Compute the max projection of the 3d data along the Z axis
         :param zyx_data: A data cube with Dimensions (Z, Y, X)
+        :param channel_type: A CellChannelType (BRIGHT_FIELD, GFP, maybe others eventually)
         :return: A flattened 2D Image
         """
-        return np.max(zyx_data, 0)
+        yx_data = np.max(zyx_data, 0)
+        return cls.rescale_img(yx_data, channel_type)
