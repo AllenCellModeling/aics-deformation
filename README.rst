@@ -37,20 +37,12 @@ _________________________
 Some of these pre-install requirements suggest source builds. To make life easier I would recommend using a conda
 environment and using
 
-``conda install numpy opencv``
-
-and
-
-``conda install -c conda-forge openpiv``
+``conda install -c conda-forge openpiv numpy opencv``
 
 Installation:
 -------------
 
-``git clone https://github.com/AllenCellModeling/aics-deformation.git``
-
-``cd aics-deformaiton``
-
-``pip install .``
+``pip install git+https://github.com/AllenCellModeling/aics-deformation.git``
 
 
 Reference Info:

@@ -18,7 +18,8 @@ requirements = [  # 'opencv-python-headless',  # for SIFT functionality MUST con
     'numpy>=1.16.1',
     # 'openpiv',
     'pandas',
-    'scikit-video'
+    'scikit-video',
+    'matplotlib<3.0.0'
     # 'opencv-python',
 ]
 
@@ -80,7 +81,8 @@ setup(
     description="Processing and visualization tools used for interacting with deformation projects.",
     entry_points={
         'console_scripts': [
-            'generate_deformation_map=aicsdeformation.bin.deformation_map:main'
+            'generate_deformation_map=aicsdeformation.bin.deformation_map:main',
+            'optimize_paramenters=aicsdeformation.bin.optimize_deformation:main'
         ],
     },
     install_requires=requirements,

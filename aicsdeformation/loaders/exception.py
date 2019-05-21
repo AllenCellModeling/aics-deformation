@@ -18,4 +18,9 @@ class InsufficientTimePointsException(Exception):
     """
     Exception class for problems like the class being passed a single time-point
     """
-    pass
+    def __init__(self, shape: list):
+        super().__init__()
+        self.shape = shape
+
+    def __str__(self) -> str:
+        return f"Insufficient time points: data shape is {self.shape}."
