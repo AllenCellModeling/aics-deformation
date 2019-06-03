@@ -1,5 +1,6 @@
 import cv2
 from enum import Enum
+import logging
 import numpy as np
 from pathlib import Path
 from typing import List, Dict, Optional
@@ -12,6 +13,8 @@ from .exception import MinBeadMatchNotMetException, InsufficientTimePointsExcept
 from .loader_abc import LoaderABC
 from .path_images import PathImages
 
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('time_lapse_loader')
 
 NpImage = np.ndarray  # (Y, X) data image
 Dcube = np.ndarray  # (Z, Y, X) data cube
@@ -143,7 +146,12 @@ class CziTimeLapseLoader(LoaderABC):
         slice_d = None
         z_data = np.sum(tmp_data, axis=(1, 2))
         z_data = z_data/np.max(z_data)
-        dz2 = np.gradient(np.gradient(z_data))
+        try:
+            dz2 = np.gradient(np.gradient(z_data))
+        except ValueError as ve:
+            log.error(f"Shape of data is {tmp_data.shape}")
+            log.error(str(ve))
+            raise
         z_idx = np.argmax(z_data)
         dz2_ind = np.argmin(dz2)
         if z_idx == dz2_ind or dz2[dz2_ind] < 0.0:
