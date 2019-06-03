@@ -70,11 +70,11 @@ class CziTimeLapseLoader(LoaderABC):
         self.over_home = self.home / 'deformations'  # folder for the deformation / cell overlay images
         self.tmp_bead_home = self.home / 'tmp' / 'beads'  # working folder for 2D image slices / removed after run
         self.tmp_cell_home = self.home / 'tmp' / 'cells'  # working folder for 2D image slices / removed after run
-        self.bead_home.mkdir(mode=0o755, parents=True)
-        self.cell_home.mkdir(mode=0o755, parents=True)
-        self.over_home.mkdir(mode=0o755, parents=True)
-        self.tmp_bead_home.mkdir(mode=0o755, parents=True)
-        self.tmp_cell_home.mkdir(mode=0o755, parents=True)
+        self.bead_home.mkdir(parents=True)
+        self.cell_home.mkdir(parents=True)
+        self.over_home.mkdir(parents=True)
+        self.tmp_bead_home.mkdir(parents=True)
+        self.tmp_cell_home.mkdir(parents=True)
         load_this = pathname
         if test_data is not None:
             load_this = test_data
