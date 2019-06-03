@@ -59,8 +59,10 @@ class CziTimeLapseLoader(LoaderABC):
                             testing as opposed to a large czi/tiff file.
             example `/usr/local/test.czi'
         """
+        log.info(f"CZI file => {pathname}")
         if test_data is None and not pathname.resolve().is_file():
             raise FileNotFoundError
+        log.info(f"resolves to => {pathname.resolve()}")
         self.parent = pathname.parent.resolve()
         self.home = self.parent / pathname.stem
         self.bead_home = self.home / 'beads'  # folder for stabilized bead images
