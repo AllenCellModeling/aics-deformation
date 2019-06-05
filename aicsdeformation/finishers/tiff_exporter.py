@@ -69,8 +69,8 @@ class TiffResultsExporter:
         Figure out the right TCZYX shape for the data object
         :return: list/tuple of the dimensions in TCZYX order
         """
-        self.cell_images.set_path()
-        img = cv2.imread(self.cell_images[0])
+        self.cell_images.set_image()
+        img = self.cell_images[0]
         dims = (self.length, len(self.channel_names), 1, img.shape[0], img.shape[1])
         return dims
 
@@ -80,11 +80,13 @@ class TiffResultsExporter:
         :param dims: The shape (T, C, Z, Y, X) of the output block
         :return: None
         """
+        self.bead_images.set_image()
+        self.cell_images.set_image()
         ect = ExportChannelType()
         self.output_data = np.uint16(np.zeros(dims))
         for t in range(self.length):
-            bead_img = cv2.imread(self.bead_images[t])
-            cell_img = cv2.imread(self.cell_images[t])
+            bead_img = self.bead_images[t]
+            cell_img = self.cell_images[t]
             self.output_data[t, ect.BEADS, 1, :, :] = bead_img[:, :, 0]
             self.output_data[t, ect.CELLS, 1, :, :] = cell_img[:, :, 0]
 
