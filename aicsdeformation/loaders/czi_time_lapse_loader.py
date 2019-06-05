@@ -159,7 +159,7 @@ class CziTimeLapseLoader(LoaderABC):
             filename = self.tmp_bead_home / f"bead_{str(time_idx).zfill(4)}_z{str(z_idx).zfill(3)}.png"
             slice_d = tmp_data[z_idx, :, :]
             slice_d = self.rescale_img(slice_d, CellChannelType.BRIGHT_FIELD)
-            cv2.imwrite(filename, slice_d)
+            cv2.imwrite(str(filename), slice_d)
         return slice_d
 
     @classmethod  # should these be class methods?
@@ -198,7 +198,7 @@ class CziTimeLapseLoader(LoaderABC):
         w_img = cv2.warpPerspective(bead_imgs[idx], m, (bead_imgs[0].shape[1], bead_imgs[0].shape[0]))
         f_name = self.bead_home / f"beads{str(idx).zfill(3)}.png"
         self.bead_images.append(f_name)
-        cv2.imwrite(f_name, w_img)
+        cv2.imwrite(str(f_name), w_img)
         return m
 
     @classmethod

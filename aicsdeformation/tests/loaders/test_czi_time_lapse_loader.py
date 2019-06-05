@@ -1,5 +1,6 @@
 import pytest
 
+import cv2
 import numpy as np
 import random
 
@@ -124,6 +125,12 @@ def test_gradient_length(instantiate_czi_movie_loader):
             assert(l_data[6, y_i, x_i] == d_slice[y_i, x_i])
 
 
+def test_cv2_imwrite():
+    nparr = np.zeros((100, 100))
+    nparr = np.uint16(nparr)
+    cv2.imwrite("test.png", nparr)
+
+
 def test_max_projection():
     dcube = np.zeros((100, 100, 100))  # make a ZYX data cube
     d_slice = np.zeros((100, 100))
@@ -136,8 +143,8 @@ def test_max_projection():
 
     lb = CellChannelType.BRIGHT_FIELD
     d_test = CziTimeLapseLoader.max_projection(dcube, lb)
-    d_slice *= 255
-    d_slice = np.uint8(d_slice)
+    d_slice *= 65535
+    d_slice = np.uint16(d_slice)
     for y_i in range(0, 99):
         for x_i in range(0, 99):
             assert d_slice[y_i, x_i] == d_test[y_i, x_i]

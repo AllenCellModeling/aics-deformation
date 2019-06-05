@@ -62,9 +62,9 @@ class PathImages(list):
         :return: a path, image or both depending on self.return_type
         """
         if self.return_type is PathImages._RType.IMAGE:
-            return cv2.imread(pth, cv2.IMREAD_ANYDEPTH)
+            return cv2.imread(str(pth), cv2.IMREAD_ANYDEPTH)
         if self.return_type is PathImages._RType.PATH:
             return pth
         if self.return_type is PathImages._RType.PATH_IMAGE:
-            return pth, cv2.imread(pth, cv2.IMREAD_ANYDEPTH)
+            return pth, cv2.imread(str(pth), cv2.IMREAD_ANYDEPTH)
         raise PathImages.RTypeException()
