@@ -80,7 +80,7 @@ setup(
         'console_scripts': [
             'generate_deformation_map=aicsdeformation.bin.deformation_map:main',
             'optimize_paramenters=aicsdeformation.bin.optimize_deformation:main',
-            'czi2tif=aicsdeformation.bin.tiff_exporter:main'
+            'czi2tif=aicsdeformation.bin.deformation_to_tiff:main'
         ],
     },
     install_requires=requirements,
