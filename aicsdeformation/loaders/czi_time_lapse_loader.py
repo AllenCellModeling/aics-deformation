@@ -5,7 +5,6 @@ import numpy as np
 from pathlib import Path
 from typing import List, Dict, Optional
 
-from imageio import imwrite
 from aicsimageio import AICSImage
 
 from .helpers import raise_a_if_b
@@ -122,7 +121,7 @@ class CziTimeLapseLoader(LoaderABC):
         w_imgs = [cv2.warpPerspective(imgs[i], self.warp_ms[i], (imgs[0].shape[1], imgs[0].shape[0]))
                   for i in range(len(imgs))]
         f_names = [self.cell_home / f"cells{str(ti).zfill(3)}.png" for ti in range(ti_max)]
-        [imwrite(str(f_name), img) for f_name, img in zip(f_names, w_imgs)]
+        [cv2.imwrite(str(f_name), img) for f_name, img in zip(f_names, w_imgs)]
         self.cell_images.extend(f_names)
 
     def image_get_index_order(self, letter: Char) -> int:
@@ -160,7 +159,7 @@ class CziTimeLapseLoader(LoaderABC):
             filename = self.tmp_bead_home / f"bead_{str(time_idx).zfill(4)}_z{str(z_idx).zfill(3)}.png"
             slice_d = tmp_data[z_idx, :, :]
             slice_d = self.rescale_img(slice_d, CellChannelType.BRIGHT_FIELD)
-            imwrite(filename, slice_d)
+            cv2.imwrite(filename, slice_d)
         return slice_d
 
     @classmethod  # should these be class methods?
@@ -199,7 +198,7 @@ class CziTimeLapseLoader(LoaderABC):
         w_img = cv2.warpPerspective(bead_imgs[idx], m, (bead_imgs[0].shape[1], bead_imgs[0].shape[0]))
         f_name = self.bead_home / f"beads{str(idx).zfill(3)}.png"
         self.bead_images.append(f_name)
-        imwrite(f_name, w_img)
+        cv2.imwrite(f_name, w_img)
         return m
 
     @classmethod
@@ -243,7 +242,7 @@ class CziTimeLapseLoader(LoaderABC):
         yx_floor = np.percentile(img, min_cutoff)
         img[img > yx_ceil] = yx_ceil
         img[img < yx_floor] = yx_floor
-        return np.uint8(255*((img - yx_floor) / (yx_ceil - yx_floor)))
+        return np.uint16(65535*((img - yx_floor) / (yx_ceil - yx_floor)))
 
     @classmethod
     def max_projection(cls, zyx_data: Dcube, channel_type: CellChannelType) -> NpImage:

@@ -1,5 +1,5 @@
+import cv2
 from enum import Enum, unique
-from imageio import imread
 
 
 class PathImages(list):
@@ -62,9 +62,9 @@ class PathImages(list):
         :return: a path, image or both depending on self.return_type
         """
         if self.return_type is PathImages._RType.IMAGE:
-            return imread(pth)
+            return cv2.imread(pth, cv2.IMREAD_ANYDEPTH)
         if self.return_type is PathImages._RType.PATH:
             return pth
         if self.return_type is PathImages._RType.PATH_IMAGE:
-            return pth, imread(pth)
+            return pth, cv2.imread(pth, cv2.IMREAD_ANYDEPTH)
         raise PathImages.RTypeException()

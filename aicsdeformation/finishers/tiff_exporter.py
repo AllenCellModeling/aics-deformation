@@ -30,17 +30,17 @@ class TiffResultsExporter:
     cell_images: PathImages
 
     def __init__(self, displacement_list: List[Displacement], bead_images: PathImages, cell_images: PathImages,
-                 over_path: Path):
+                 source_name: Path):
         """
         :param displacement_list: List of displacement objects for each pair of images
         :param bead_images: A PathImages(List) of bead images
         :param cell_images: A PathImages(List) of cell max projection images
-        :param over_path: The directory Path to save the overlay deformation / cell images to
+        :param source_name: The Path to the source filename
         """
         self.disps = displacement_list
         self.bead_images = bead_images
         self.cell_images = cell_images
-        self.over_home = over_path
+        self.source_fname = source_name
         self.over_images = PathImages()
         self.min_data_value = 2250  # these are hardcoded for now based on histograms of the deformation data
         self.max_data_value = 4750
@@ -48,7 +48,7 @@ class TiffResultsExporter:
         self.channel_names = ('beads', 'cells', '||deformation||', '||raw defs||', 'u', 'v', 's/n')
         self.output_data = None
 
-    def process(self, fname: Path) -> None:
+    def process(self) -> None:
         """
         This is the function to call from main that will run use the member functions to
         generate a finished deformation movie.
@@ -59,10 +59,10 @@ class TiffResultsExporter:
         self.populate_deformation_mag(dims)
         self.output_data = np.uint16(self.output_data)
 
-        oname = Path(fname.parent) / fname.stem
+        oname = Path(self.source_fname.parent) / self.source_fname.stem
         oname.with_suffix('.def.tif')
-        ow = OmeTifWriter(oname)
-        ow.save(self.output_data, channel_names=self.channel_names)
+        with OmeTifWriter(oname) as ow:
+            ow.save(self.output_data, channel_names=self.channel_names)
 
     def lookup_dimensions(self) -> TCZYX_Tuple:
         """
@@ -98,7 +98,7 @@ class TiffResultsExporter:
             raw_data = np.clip(raw_data, 0, 65535)
             self.output_data[t, ect.RAW_DEFS, 1, :, :] = raw_data
 
-    def deformation_mag_to_img(self, disp: Displacement, dims: TCZYX_Tuple, raw: bool = False)-> np.ndarray:
+    def deformation_mag_to_img(self, disp: Displacement, dims: TCZYX_Tuple, raw: bool = False) -> np.ndarray:
         dmag = self.arctan_map(disp, raw=raw)
         dy = int((dims[3] - dmag.shape[0]) / 2)
         dx = int((dims[4] - dmag.shape[1]) / 2)
@@ -110,8 +110,9 @@ class TiffResultsExporter:
     @classmethod
     def arctan_map(cls, disp: Displacement, raw: bool = False) -> np.ndarray:
         """
-        I'm using the arctan to map the deformation intensities into the range (0,1)
+        I'm using the arctan to map the deformation intensities into the range (0, 1)
         :param disp: The displacement class
+        :param raw: Set to True return the raw values if false scale them from (0, 1)
         :return: the scaled intensity values
         """
         dmag = np.nan_to_num(disp.magnitude_grid, copy=True)
