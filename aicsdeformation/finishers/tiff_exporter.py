@@ -21,6 +21,9 @@ class ExportChannelType(IntEnum):
     SN = 6
 
 
+ECT = ExportChannelType
+
+
 class TiffResultsExporter:
     """
     This class uses the generated images and displacements (u, v) to create deformation heatmaps
@@ -81,23 +84,21 @@ class TiffResultsExporter:
         """
         self.bead_images.set_image()
         self.cell_images.set_image()
-        ect = ExportChannelType()
         self.output_data = np.uint16(np.zeros(dims))
         for t in range(self.length):
             bead_img = self.bead_images[t]
             cell_img = self.cell_images[t]
-            self.output_data[t, ect.BEADS, 1, :, :] = bead_img[:, :, 0]
-            self.output_data[t, ect.CELLS, 1, :, :] = cell_img[:, :, 0]
+            self.output_data[t, ECT.BEADS, 1, :, :] = bead_img[:, :, 0]
+            self.output_data[t, ECT.CELLS, 1, :, :] = cell_img[:, :, 0]
 
     def populate_deformation_mag(self, dims: TCZYX_Tuple) -> None:
-        ect = ExportChannelType()
         for t in range(1, self.length):
             defdata = self.deformation_mag_to_img(self.disps[t-1], dims)  # our t index is 1 longer than deformations
             defdata *= 65535
-            self.output_data[t, ect.DEFORMATIONS, 1, :, :] = defdata[:, :]
+            self.output_data[t, ECT.DEFORMATIONS, 1, :, :] = defdata[:, :]
             raw_data = self.deformation_mag_to_img(self.disps[t-1], dims, raw=True)
             raw_data = np.clip(raw_data, 0, 65535)
-            self.output_data[t, ect.RAW_DEFS, 1, :, :] = raw_data
+            self.output_data[t, ECT.RAW_DEFS, 1, :, :] = raw_data
 
     def deformation_mag_to_img(self, disp: Displacement, dims: TCZYX_Tuple, raw: bool = False) -> np.ndarray:
         dmag = self.arctan_map(disp, raw=raw)
