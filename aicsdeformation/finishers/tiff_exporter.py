@@ -1,4 +1,3 @@
-import cv2
 from enum import IntEnum
 import numpy as np
 from pathlib import Path
