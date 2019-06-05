@@ -88,8 +88,8 @@ class TiffResultsExporter:
         for t in range(self.length):
             bead_img = self.bead_images[t]
             cell_img = self.cell_images[t]
-            self.output_data[t, ECT.BEADS, 1, :, :] = bead_img[:, :, 0]
-            self.output_data[t, ECT.CELLS, 1, :, :] = cell_img[:, :, 0]
+            self.output_data[t, ECT.BEADS, 1, :, :] = bead_img[:, :]
+            self.output_data[t, ECT.CELLS, 1, :, :] = cell_img[:, :]
 
     def populate_deformation_mag(self, dims: TCZYX_Tuple) -> None:
         for t in range(1, self.length):
