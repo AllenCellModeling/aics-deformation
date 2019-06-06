@@ -73,7 +73,7 @@ class TiffResultsExporter:
         """
         self.cell_images.set_image()
         img = self.cell_images[0]
-        dims = (self.length, len(self.channel_names), 1, img.shape[0], img.shape[1])
+        dims = (self.length, len(self.channel_names), 0, img.shape[0], img.shape[1])
         return dims
 
     def construct_and_populate_bead_and_cell_images(self, dims: TCZYX_Tuple):
@@ -88,17 +88,17 @@ class TiffResultsExporter:
         for t in range(self.length):
             bead_img = self.bead_images[t]
             cell_img = self.cell_images[t]
-            self.output_data[t, ECT.BEADS, 1, :, :] = bead_img[:, :]
-            self.output_data[t, ECT.CELLS, 1, :, :] = cell_img[:, :]
+            self.output_data[t, ECT.BEADS, 0, :, :] = bead_img[:, :]
+            self.output_data[t, ECT.CELLS, 0, :, :] = cell_img[:, :]
 
     def populate_deformation_mag(self, dims: TCZYX_Tuple) -> None:
         for t in range(1, self.length):
             defdata = self.deformation_mag_to_img(self.disps[t-1], dims)  # our t index is 1 longer than deformations
             defdata *= 65535
-            self.output_data[t, ECT.DEFORMATIONS, 1, :, :] = defdata[:, :]
+            self.output_data[t, ECT.DEFORMATIONS, 0, :, :] = defdata[:, :]
             raw_data = self.deformation_mag_to_img(self.disps[t-1], dims, raw=True)
             raw_data = np.clip(raw_data, 0, 65535)
-            self.output_data[t, ECT.RAW_DEFS, 1, :, :] = raw_data
+            self.output_data[t, ECT.RAW_DEFS, 0, :, :] = raw_data
 
     def deformation_mag_to_img(self, disp: Displacement, dims: TCZYX_Tuple, raw: bool = False) -> np.ndarray:
         dmag = self.arctan_map(disp, raw=raw)
