@@ -62,7 +62,7 @@ class TiffResultsExporter:
         self.output_data = np.uint16(self.output_data)
 
         oname = Path(self.source_fname.parent) / self.source_fname.stem
-        oname.with_suffix('.def.tif')
+        oname = oname.with_suffix('.def.tif')
         with OmeTifWriter(oname) as ow:
             ow.save(self.output_data, channel_names=self.channel_names)
 
