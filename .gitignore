@@ -105,5 +105,6 @@ ENV/
 .mypy_cache/
 
 # Specific project extras
-data/
+data/20*
+data/output*
 .DS_Store
