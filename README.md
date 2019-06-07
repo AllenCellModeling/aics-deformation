@@ -26,7 +26,7 @@ time-lapse.
 (x, y) point.
 
 3. **[Optional]** Post-process the deformation data into a heatmap image and overlay the cell max-projection onto it.
-Composite these frames into an mp4 movie.
+Composite these frames into an mpg movie.
 
 ## Installation
 PyPi installation not available at this time, please install using git.
