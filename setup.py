@@ -15,9 +15,7 @@ requirements = [  # 'opencv-python-headless',  # for SIFT functionality MUST con
     'numpy>=1.16.1',
     'openpiv',
     'pandas',
-    'scikit-video',
-    'matplotlib<3.0.0'
-    # 'opencv-python',
+    'scikit-video'
 ]
 
 test_requirements = [
