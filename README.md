@@ -41,6 +41,17 @@ package. For the optional components it is required to install `openCV`. Some of
 source builds. To make life easier it is recommended to use a conda environment and using `conda install -c conda-forge
 openpiv numpy opencv`.
 
+## Usage
+
+Command line tools for processing czi files
+
+* to create a folders of image files with a movie output use (used to generate the images above):
+    > ``generate_deformation_map -i <input.czi>``
+* to create a multichannel TIF from a czi use, channel order [beads, cells, deformation, raw defs, u+, u-, v+, v-, s/n]:
+    > ``czi2tif -i <input.czi>``
+
+* command line tool to explore parameter space, before using look at aicsdeformation.bin.optimize_deformation.py
+    > ``optimize_parameters -i <input.czi>``
 
 ### Credits
 This package was created with Cookiecutter. [Original repository](https://github.com/audreyr/cookiecutter)
