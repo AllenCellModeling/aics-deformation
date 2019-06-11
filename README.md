@@ -1,6 +1,6 @@
 # AICS Deformation
 
-[![build status](https://travis-ci.com/AllenCellModeling/aics-deformation.svg?branch=master)](https://travis-ci.com/AllenCellModeling/aics-deformation)
+[![build status](https://travis-ci.org/AllenCellModeling/aics-deformation.svg?branch=master)](https://travis-ci.org/AllenCellModeling/aics-deformation)
 [![codecov](https://codecov.io/gh/AllenCellModeling/aics-deformation/branch/master/graph/badge.svg)](https://codecov.io/gh/AllenCellModeling/aics-deformation)
 
 
