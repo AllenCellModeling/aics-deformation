@@ -4,9 +4,12 @@
 [![codecov](https://codecov.io/gh/AllenCellModeling/aics-deformation/branch/master/graph/badge.svg)](https://codecov.io/gh/AllenCellModeling/aics-deformation)
 
 
+
+
+
 | **Bead Timeseries Input** | **Deformations Over Cells Output** |
 |---------------------------|------------------------------------|
-| ![bead layer timeseries](resources/beads.gif =400x) | ![deformations over cells](resource/defs.gif =400x) |
+| <img src="resources/beads.gif" width="400px"> | <img src="resources/defs.gif" width="400px"> |
 
 A collection of tools for pre-processing, generating, and post-processing deformation related tasks.
 
