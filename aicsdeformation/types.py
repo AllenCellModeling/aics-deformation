@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from pandas import DataFrame
 
 npvec = np.ndarray
 npgrid = np.ndarray
