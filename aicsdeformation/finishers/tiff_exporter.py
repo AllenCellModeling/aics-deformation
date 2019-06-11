@@ -1,7 +1,7 @@
 from enum import IntEnum
 import numpy as np
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from aicsimageio.omeTifWriter import OmeTifWriter
 
@@ -10,15 +10,19 @@ from ..loaders.path_images import PathImages
 
 TCZYX_Tuple = Tuple[int, int, int, int, int]
 
+IMG_MAX = 65535
+
 
 class ExportChannelType(IntEnum):
     BEADS = 0
     CELLS = 1
-    DEFORMATIONS = 2
-    RAW_DEFS = 3
-    U = 4
-    V = 5
-    SN = 6
+    DEFORMATIONS = 2  # Scaled
+    RAW_DEFS = 3      # Raw values
+    U_P = 4           # U >=0
+    U_M = 5           # |U| for U < 0
+    V_P = 6           # V >=0
+    V_M = 7           # |V| for V < 0
+    SN = 8            # S/N
 
 
 ECT = ExportChannelType
@@ -29,8 +33,6 @@ class TiffResultsExporter:
     This class uses the generated images and displacements (u, v) to create deformation heatmaps
     with cell max-projection overlays
     """
-    cell_images: PathImages
-
     def __init__(self, displacement_list: List[Displacement], bead_images: PathImages, cell_images: PathImages,
                  source_name: Path):
         """
@@ -44,8 +46,6 @@ class TiffResultsExporter:
         self.cell_images = cell_images
         self.source_fname = source_name
         self.over_images = PathImages()
-        self.min_data_value = 2250  # these are hardcoded for now based on histograms of the deformation data
-        self.max_data_value = 4750
         self.length = len(bead_images)
         self.channel_names = ('beads', 'cells', '||deformation||', '||raw defs||', 'u', 'v', 's/n')
         self.output_data = None
@@ -65,7 +65,6 @@ class TiffResultsExporter:
         oname = oname.with_suffix('.def.tif')
         with OmeTifWriter(oname, overwrite_file=True) as ow:
             data = np.transpose(self.output_data, (0, 2, 1, 3, 4))
-            print(data.shape)
             ow.save(data=data, channel_names=self.channel_names)
 
     def lookup_dimensions(self) -> TCZYX_Tuple:
@@ -95,11 +94,10 @@ class TiffResultsExporter:
 
     def populate_deformation_mag(self, dims: TCZYX_Tuple) -> None:
         for t in range(1, self.length):
-            defdata = self.deformation_mag_to_img(self.disps[t-1], dims)  # our t index is 1 longer than deformations
-            defdata *= 65535
-            self.output_data[t, ECT.DEFORMATIONS, 0, :, :] = defdata[:, :]
+            def_data = self.deformation_mag_to_img(self.disps[t-1], dims)  # our t index is 1 longer than deformations
+            self.output_data[t, ECT.DEFORMATIONS, 0, :, :] = def_data[:, :]
             raw_data = self.deformation_mag_to_img(self.disps[t-1], dims, raw=True)
-            raw_data = np.clip(raw_data, 0, 65535)
+            raw_data = np.clip(raw_data, 0, IMG_MAX)
             self.output_data[t, ECT.RAW_DEFS, 0, :, :] = raw_data
 
     def deformation_mag_to_img(self, disp: Displacement, dims: TCZYX_Tuple, raw: bool = False) -> np.ndarray:
@@ -108,7 +106,7 @@ class TiffResultsExporter:
         dx = int((dims[4] - dmag.shape[1]) / 2)
         result = np.zeros((dims[3], dims[4]))
         result[dy:dy + dmag.shape[0], dx:dx + dmag.shape[1]] = dmag
-        result = np.flip(result, 0)
+        #result = np.flip(result, 0)
         return result
 
     @classmethod
@@ -119,7 +117,13 @@ class TiffResultsExporter:
         :param raw: Set to True return the raw values if false scale them from (0, 1)
         :return: the scaled intensity values
         """
-        dmag = np.nan_to_num(disp.magnitude_grid, copy=True)
+        dmag = np.nan_to_num(disp.magnitude, copy=True)
         if not raw:
-            dmag = (np.arctan(np.sqrt(3) * (dmag - 3750.0) / 26250.0) + np.pi / 2.0) / np.pi
+            dmag = cls.scale_value(dmag)
         return dmag
+
+    @classmethod
+    def scale_value(cls, d_val: Union[np.ndarray, float]) -> Union[np.ndarray, float]:
+        ans = ((np.arctan(np.sqrt(3) * (d_val - 3750.0) / 26250.0) + (np.pi / 2.0)) / np.pi)
+        ans = (ans - 0.42)/(1.0 - 0.42)
+        return IMG_MAX*ans

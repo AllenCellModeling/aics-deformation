@@ -68,12 +68,12 @@ class Displacement(object):
 
         return self._median_s2n
 
-    @property
-    def magnitude_grid(self) -> npgrid:
-        if self._m_grid is None:
-            df = DataFrame({'x': self.x.flatten(), 'y': self.y.flatten(), 'm': self.magnitude.flatten()})
-            self._m_grid = df.pivot('y', 'x', 'm').values
-        return self._m_grid
+#    @property
+#    def magnitude_grid(self) -> npgrid:
+#        if self._m_grid is None:
+#            df = DataFrame({'x': self.x.flatten(), 'y': self.y.flatten(), 'm': self.magnitude.flatten()})
+#            self._m_grid = df.pivot('y', 'x', 'm').values
+#        return self._m_grid
 
     def __str__(self):
         output = "<Displacement ["
