@@ -63,8 +63,10 @@ class TiffResultsExporter:
 
         oname = Path(self.source_fname.parent) / self.source_fname.stem
         oname = oname.with_suffix('.def.tif')
-        with OmeTifWriter(oname) as ow:
-            ow.save(self.output_data, channel_names=self.channel_names)
+        with OmeTifWriter(oname, overwrite_file=True) as ow:
+            data = np.transpose(self.output_data, (0, 2, 1, 3, 4))
+            print(data.shape)
+            ow.save(data=data, channel_names=self.channel_names)
 
     def lookup_dimensions(self) -> TCZYX_Tuple:
         """

@@ -49,19 +49,6 @@ def instantiate_czi_movie_loader(data_dir):
     return cziml, fname.resolve()
 
 
-# @pytest.fixture
-# def instantiate_czi_movie_loader_two(data_dir):
-#     from pathlib import Path
-#     from shutil import rmtree
-#     fname = data_dir / '20190425_S08_001-04-Scene-3-P4-B03.czi'
-#     working_folder = fname.parent / Path(fname.stem)
-#     if working_folder.exists():  # if the folder exists remove it before it's passed to the class to construct
-#         rmtree(working_folder)
-#     img_obj = ImgContainer()
-#     cziml = CziTimeLapseLoader(pathname=fname)
-#     return cziml, fname.resolve()
-
-
 @pytest.fixture
 def get_czi_class_and_time(data_dir):
     from pathlib import Path
