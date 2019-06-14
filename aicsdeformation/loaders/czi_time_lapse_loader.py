@@ -122,7 +122,7 @@ class CziTimeLapseLoader(LoaderABC):
         w_imgs = [cv2.warpPerspective(imgs[i], self.warp_ms[i], (imgs[0].shape[1], imgs[0].shape[0]))
                   for i in range(len(imgs))]
         m_name = self.cell_home / "mtranforms.pkl"
-        with open(m_name, 'rb') as fp:
+        with open(m_name, 'wb') as fp:
             pickle.dump(self.warp_ms, fp)
         f_names = [self.cell_home / f"cells{str(ti).zfill(3)}.png" for ti in range(ti_max)]
         [cv2.imwrite(str(f_name), img) for f_name, img in zip(f_names, w_imgs)]
