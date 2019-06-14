@@ -47,8 +47,8 @@ class TiffResultsExporter:
         self.source_fname = source_name
         self.over_images = PathImages()
         self.length = len(bead_images)
-        self.channel_names = ('beads', 'cells', '||deformation||', '||raw defs||',
-                              '||u+||', '||u-||', '||v+||', '||v-||', 's/n')
+        self.channel_names = ('beads', 'cells', '||deformation||', '||raw defs||')
+        # '||u+||', '||u-||', '||v+||', '||v-||', 's/n') to add back in later
         self.output_data = None
 
     def process(self) -> None:
@@ -102,26 +102,26 @@ class TiffResultsExporter:
             frame = self.deformation_mag_to_img(self.disps[t-1].magnitude, dims, raw=True)
             frame = np.clip(frame, 0, IMG_MAX)
             self.output_data[t, ECT.RAW_DEFS, 0, :, :] = frame
-            # U_P
-            frame = np.clip(self.disps[t-1].u, a_min=0, a_max=IMG_MAX)
-            frame = self.deformation_mag_to_img(frame, dims, raw=True)
-            self.output_data[t, ECT.U_P, 0, :, :] = frame
-            # U_M
-            frame = -1.0 * np.clip(self.disps[t-1].u, a_min=-IMG_MAX, a_max=0)
-            frame = self.deformation_mag_to_img(frame, dims, raw=True)
-            self.output_data[t, ECT.U_M, 0, :, :] = frame
-            # V_P
-            frame = np.clip(self.disps[t - 1].v, a_min=0, a_max=IMG_MAX)
-            frame = self.deformation_mag_to_img(frame, dims, raw=True)
-            self.output_data[t, ECT.V_P, 0, :, :] = frame
-            # V_M
-            frame = -1.0 * np.clip(self.disps[t - 1].v, a_min=-IMG_MAX, a_max=0)
-            frame = self.deformation_mag_to_img(frame, dims, raw=True)
-            self.output_data[t, ECT.V_M, 0, :, :] = frame
-            # S/N
-            frame = np.clip(self.disps[t - 1].sig2noise, a_min=0, a_max=IMG_MAX)
-            frame = self.deformation_mag_to_img(frame, dims, raw=True)
-            self.output_data[t, ECT.SN, 0, :, :] = frame
+            # # U_P
+            # frame = np.clip(self.disps[t-1].u, a_min=0, a_max=IMG_MAX)
+            # frame = self.deformation_mag_to_img(frame, dims, raw=True)
+            # self.output_data[t, ECT.U_P, 0, :, :] = frame
+            # # U_M
+            # frame = -1.0 * np.clip(self.disps[t-1].u, a_min=-IMG_MAX, a_max=0)
+            # frame = self.deformation_mag_to_img(frame, dims, raw=True)
+            # self.output_data[t, ECT.U_M, 0, :, :] = frame
+            # # V_P
+            # frame = np.clip(self.disps[t - 1].v, a_min=0, a_max=IMG_MAX)
+            # frame = self.deformation_mag_to_img(frame, dims, raw=True)
+            # self.output_data[t, ECT.V_P, 0, :, :] = frame
+            # # V_M
+            # frame = -1.0 * np.clip(self.disps[t - 1].v, a_min=-IMG_MAX, a_max=0)
+            # frame = self.deformation_mag_to_img(frame, dims, raw=True)
+            # self.output_data[t, ECT.V_M, 0, :, :] = frame
+            # # S/N
+            # frame = np.clip(self.disps[t - 1].sig2noise, a_min=0, a_max=IMG_MAX)
+            # frame = self.deformation_mag_to_img(frame, dims, raw=True)
+            # self.output_data[t, ECT.SN, 0, :, :] = frame
 
     def deformation_mag_to_img(self, grid_data: np.ndarray, dims: TCZYX_Tuple, raw: bool = False) -> np.ndarray:
         dmag = self.arctan_map(grid_data, raw=raw)
@@ -135,7 +135,7 @@ class TiffResultsExporter:
     def arctan_map(cls, d_grid: np.ndarray, raw: bool = False) -> np.ndarray:
         """
         I'm using the arctan to map the deformation intensities into the range (0, 1)
-        :param disp: The displacement class
+        :param d_grid: The numpy array of values to be scaled
         :param raw: Set to True return the raw values if false scale them from (0, 1)
         :return: the scaled intensity values
         """
