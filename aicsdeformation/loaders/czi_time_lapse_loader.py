@@ -3,6 +3,7 @@ from enum import Enum
 import logging
 import numpy as np
 from pathlib import Path
+import pickle
 from typing import List, Dict, Optional
 
 from aicsimageio import AICSImage
@@ -69,11 +70,11 @@ class CziTimeLapseLoader(LoaderABC):
         self.over_home = self.home / 'deformations'  # folder for the deformation / cell overlay images
         self.tmp_bead_home = self.home / 'tmp' / 'beads'  # working folder for 2D image slices / removed after run
         self.tmp_cell_home = self.home / 'tmp' / 'cells'  # working folder for 2D image slices / removed after run
-        self.bead_home.mkdir(parents=True)
-        self.cell_home.mkdir(parents=True)
-        self.over_home.mkdir(parents=True)
-        self.tmp_bead_home.mkdir(parents=True)
-        self.tmp_cell_home.mkdir(parents=True)
+        self.bead_home.mkdir(parents=True, exist_ok=True)
+        self.cell_home.mkdir(parents=True, exist_ok=True)
+        self.over_home.mkdir(parents=True, exist_ok=True)
+        self.tmp_bead_home.mkdir(parents=True, exist_ok=True)
+        self.tmp_cell_home.mkdir(parents=True, exist_ok=True)
         load_this = pathname
         if test_data is not None:
             load_this = test_data
@@ -120,6 +121,9 @@ class CziTimeLapseLoader(LoaderABC):
         imgs = [self.max_projection(dcube[ti, :, :, :], self.cell_channel_type) for ti in range(ti_max)]
         w_imgs = [cv2.warpPerspective(imgs[i], self.warp_ms[i], (imgs[0].shape[1], imgs[0].shape[0]))
                   for i in range(len(imgs))]
+        m_name = self.cell_home / "mtranforms.pkl"
+        with open(m_name, 'rb') as fp:
+            pickle.dump(self.warp_ms, fp)
         f_names = [self.cell_home / f"cells{str(ti).zfill(3)}.png" for ti in range(ti_max)]
         [cv2.imwrite(str(f_name), img) for f_name, img in zip(f_names, w_imgs)]
         self.cell_images.extend(f_names)
