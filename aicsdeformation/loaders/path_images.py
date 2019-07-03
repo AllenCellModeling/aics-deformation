@@ -5,6 +5,10 @@ from enum import Enum, unique
 class PathImages(list):
     """BeadImages is a subclass of list. The intent is to store paths and then just load the image when the list
     element is requested rather than keeping all the list elements in memory simultaneously. """
+
+    CV_IMG_TYPE = cv2.IMREAD_GRAYSCALE  # should give us 8bit grayscale
+    # CV_IMG_TYPE = cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH  # should give 16 bit
+
     @unique
     class _RType(Enum):
         """
@@ -62,9 +66,9 @@ class PathImages(list):
         :return: a path, image or both depending on self.return_type
         """
         if self.return_type is PathImages._RType.IMAGE:
-            return cv2.imread(str(pth), cv2.IMREAD_ANYDEPTH)
+            return cv2.imread(str(pth), self.CV_IMG_TYPE)
         if self.return_type is PathImages._RType.PATH:
             return pth
         if self.return_type is PathImages._RType.PATH_IMAGE:
-            return pth, cv2.imread(str(pth), cv2.IMREAD_ANYDEPTH)
+            return pth, cv2.imread(str(pth), self.CV_IMG_TYPE)
         raise PathImages.RTypeException()

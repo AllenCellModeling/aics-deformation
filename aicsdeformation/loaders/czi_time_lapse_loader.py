@@ -44,6 +44,9 @@ class CziTimeLapseLoader(LoaderABC):
     max_project image for overlay post-piv processing.
     """
 
+    BIT_DEPTH_MAX = 255  # 8 bit
+    # BIT_DEPTH_MAX = 65535  # for 16 bit
+
     def __init__(self, pathname: Path, bead_channel: Optional[int] = 1, cell_channel: Optional[int] = 0,
                  cell_channel_type: Optional[CellChannelType] = CellChannelType.BRIGHT_FIELD,
                  test_data: Optional[np.ndarray] = None):
@@ -140,7 +143,7 @@ class CziTimeLapseLoader(LoaderABC):
             raise InsufficientTimePointsException(self.image.shape)
         return t_index
 
-    def find_bead_slice(self, tmp_data: Dcube, time_idx: int) -> NpImage:
+    def find_bead_slice(self, tmp_data: Dcube, time_idx: int, rescale: bool=True) -> NpImage:
         """
         Collapse all the pixels in the (x,y) plain into one value then normalize it to [0,1]
         and then check the maximum value against the maxima of the second derivative.
@@ -150,7 +153,10 @@ class CziTimeLapseLoader(LoaderABC):
         """
         slice_d = None
         z_data = np.sum(tmp_data, axis=(1, 2))
-        z_data = z_data/np.max(z_data)
+        denom = np.max(z_data)
+        if denom == 0:
+            raise ValueError("Time-step contains no bright pixels. Unable to find bead slice.")
+        z_data = z_data/denom
         try:
             dz2 = np.gradient(np.gradient(z_data))
         except ValueError as ve:
@@ -162,7 +168,8 @@ class CziTimeLapseLoader(LoaderABC):
         if z_idx == dz2_ind or dz2[dz2_ind] < 0.0:
             filename = self.tmp_bead_home / f"bead_{str(time_idx).zfill(4)}_z{str(z_idx).zfill(3)}.png"
             slice_d = tmp_data[z_idx, :, :]
-            slice_d = self.rescale_img(slice_d, CellChannelType.BRIGHT_FIELD)
+            if rescale:
+                slice_d = self.rescale_img(slice_d, CellChannelType.BRIGHT_FIELD)
             cv2.imwrite(str(filename), slice_d)
         return slice_d
 
@@ -246,7 +253,8 @@ class CziTimeLapseLoader(LoaderABC):
         yx_floor = np.percentile(img, min_cutoff)
         img[img > yx_ceil] = yx_ceil
         img[img < yx_floor] = yx_floor
-        return np.uint16(65535*((img - yx_floor) / (yx_ceil - yx_floor)))
+        denom = 1.0 if (yx_ceil - yx_floor) == 0 else (yx_ceil - yx_floor)
+        return np.uint8(cls.BIT_DEPTH_MAX*((img - yx_floor) / denom))
 
     @classmethod
     def max_projection(cls, zyx_data: Dcube, channel_type: CellChannelType) -> NpImage:
