@@ -36,7 +36,7 @@ def main():
     # calculate deformations
     # disp_list = aics_def.generate_displacements(window_size=16, overlap=4, search_area_size=16, dt=0.002)
     # {'window_size': 24, 'overlap': 6, 'dt': 0.002, 'search_area_size': 24}
-    disp_list = aics_def.generate_displacements(window_size=24, overlap=6, search_area_size=24, dt=0.002)
+    disp_list = aics_def.generate_displacements(window_size=8, overlap=7, search_area_size=8, dt=0.002)
 
     # create deformation / cell image overlays
     fin = TiffResultsExporter(displacement_list=disp_list, bead_images=img.bead_images,
