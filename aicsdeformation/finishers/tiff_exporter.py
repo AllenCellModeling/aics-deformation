@@ -10,7 +10,7 @@ from ..loaders.path_images import PathImages
 
 TCZYX_Tuple = Tuple[int, int, int, int, int]
 
-IMG_MAX = 65535
+IMG_MAX = 255  # 65535
 
 
 class ExportChannelType(IntEnum):
