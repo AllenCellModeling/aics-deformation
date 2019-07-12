@@ -9,7 +9,7 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 requirements = [  # 'opencv-python-headless',  # for SIFT functionality MUST conda install opencv or build source
-    'aicsimageio',
+    'aicsimageio==0.6.4',
     'cython>=0.29.5',
     'imageio',
     'numpy>=1.16.1',
